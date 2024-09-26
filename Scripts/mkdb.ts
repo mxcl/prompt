@@ -47,7 +47,5 @@ async function get(url: string) {
 
 for (const cask of casks) {
   const artifacts = cask.artifacts.flatMap(artifact => artifact.app || artifact.pkg).filter(x => x)
-  // console.log(cask.name, cask.url, artifacts)
-
-  if (cask.name.length > 1) { console.log(cask)}
+  console.log(cask.name, cask.url, artifacts)
 }
