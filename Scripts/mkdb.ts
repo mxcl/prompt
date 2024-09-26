@@ -31,7 +31,7 @@ async function get(url: string) {
   const response = await fetch(url, { headers });
 
   if (response.status === 304) {
-    return cachedData['data'];
+    return cachedData;
   } else if (response.ok) {
     const newEtag = response.headers.get("ETag");
     const jsonData = await response.json();
