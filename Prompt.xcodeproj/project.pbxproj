@@ -7,19 +7,17 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		63AB60362BB5DC4700254B65 /* pkgxApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63AB60352BB5DC4700254B65 /* pkgxApp.swift */; };
+		63AB60362BB5DC4700254B65 /* App.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63AB60352BB5DC4700254B65 /* App.swift */; };
 		63AB60382BB5DC4700254B65 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63AB60372BB5DC4700254B65 /* ContentView.swift */; };
 		63AB603A2BB5DC4800254B65 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 63AB60392BB5DC4800254B65 /* Assets.xcassets */; };
-		63AB603E2BB5DC4800254B65 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 63AB603D2BB5DC4800254B65 /* Preview Assets.xcassets */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		63AB60322BB5DC4700254B65 /* pkgx.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = pkgx.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		63AB60352BB5DC4700254B65 /* pkgxApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = pkgxApp.swift; sourceTree = "<group>"; };
+		63AB60322BB5DC4700254B65 /* Prompt.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Prompt.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		63AB60352BB5DC4700254B65 /* App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App.swift; sourceTree = "<group>"; };
 		63AB60372BB5DC4700254B65 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		63AB60392BB5DC4800254B65 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		63AB603B2BB5DC4800254B65 /* pkgx.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = pkgx.entitlements; sourceTree = "<group>"; };
-		63AB603D2BB5DC4800254B65 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
+		63AB603B2BB5DC4800254B65 /* Prompt.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Prompt.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -36,7 +34,10 @@
 		63AB60292BB5DC4700254B65 = {
 			isa = PBXGroup;
 			children = (
-				63AB60342BB5DC4700254B65 /* pkgx */,
+				63AB60352BB5DC4700254B65 /* App.swift */,
+				63AB60372BB5DC4700254B65 /* ContentView.swift */,
+				63AB60392BB5DC4800254B65 /* Assets.xcassets */,
+				63AB603B2BB5DC4800254B65 /* Prompt.entitlements */,
 				63AB60332BB5DC4700254B65 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -44,37 +45,17 @@
 		63AB60332BB5DC4700254B65 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				63AB60322BB5DC4700254B65 /* pkgx.app */,
+				63AB60322BB5DC4700254B65 /* Prompt.app */,
 			);
 			name = Products;
-			sourceTree = "<group>";
-		};
-		63AB60342BB5DC4700254B65 /* pkgx */ = {
-			isa = PBXGroup;
-			children = (
-				63AB60352BB5DC4700254B65 /* pkgxApp.swift */,
-				63AB60372BB5DC4700254B65 /* ContentView.swift */,
-				63AB60392BB5DC4800254B65 /* Assets.xcassets */,
-				63AB603B2BB5DC4800254B65 /* pkgx.entitlements */,
-				63AB603C2BB5DC4800254B65 /* Preview Content */,
-			);
-			path = pkgx;
-			sourceTree = "<group>";
-		};
-		63AB603C2BB5DC4800254B65 /* Preview Content */ = {
-			isa = PBXGroup;
-			children = (
-				63AB603D2BB5DC4800254B65 /* Preview Assets.xcassets */,
-			);
-			path = "Preview Content";
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		63AB60312BB5DC4700254B65 /* pkgx */ = {
+		63AB60312BB5DC4700254B65 /* Prompt */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 63AB60412BB5DC4800254B65 /* Build configuration list for PBXNativeTarget "pkgx" */;
+			buildConfigurationList = 63AB60412BB5DC4800254B65 /* Build configuration list for PBXNativeTarget "Prompt" */;
 			buildPhases = (
 				63AB602E2BB5DC4700254B65 /* Sources */,
 				63AB602F2BB5DC4700254B65 /* Frameworks */,
@@ -84,9 +65,9 @@
 			);
 			dependencies = (
 			);
-			name = pkgx;
+			name = Prompt;
 			productName = pkgx;
-			productReference = 63AB60322BB5DC4700254B65 /* pkgx.app */;
+			productReference = 63AB60322BB5DC4700254B65 /* Prompt.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -104,7 +85,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 63AB602D2BB5DC4700254B65 /* Build configuration list for PBXProject "pkgx" */;
+			buildConfigurationList = 63AB602D2BB5DC4700254B65 /* Build configuration list for PBXProject "Prompt" */;
 			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
@@ -117,7 +98,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				63AB60312BB5DC4700254B65 /* pkgx */,
+				63AB60312BB5DC4700254B65 /* Prompt */,
 			);
 		};
 /* End PBXProject section */
@@ -127,7 +108,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				63AB603E2BB5DC4800254B65 /* Preview Assets.xcassets in Resources */,
 				63AB603A2BB5DC4800254B65 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -140,7 +120,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				63AB60382BB5DC4700254B65 /* ContentView.swift in Sources */,
-				63AB60362BB5DC4700254B65 /* pkgxApp.swift in Sources */,
+				63AB60362BB5DC4700254B65 /* App.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -266,10 +246,10 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = pkgx/pkgx.entitlements;
+				CODE_SIGN_ENTITLEMENTS = Prompt.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_ASSET_PATHS = "\"pkgx/Preview Content\"";
+				DEVELOPMENT_TEAM = ZU76A67LGU;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
@@ -280,20 +260,20 @@
 				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.4;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
-				MACOSX_DEPLOYMENT_TARGET = 14.4;
+				MACOSX_DEPLOYMENT_TARGET = 11.5;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = dev.pkgx;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.pkgx.prompt;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SUPPORTED_PLATFORMS = macosx;
+				SUPPORTS_MACCATALYST = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
 		};
@@ -302,10 +282,10 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = pkgx/pkgx.entitlements;
+				CODE_SIGN_ENTITLEMENTS = Prompt.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_ASSET_PATHS = "\"pkgx/Preview Content\"";
+				DEVELOPMENT_TEAM = ZU76A67LGU;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
@@ -316,27 +296,27 @@
 				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.4;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
-				MACOSX_DEPLOYMENT_TARGET = 14.4;
+				MACOSX_DEPLOYMENT_TARGET = 11.5;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = dev.pkgx;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.pkgx.prompt;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SUPPORTED_PLATFORMS = macosx;
+				SUPPORTS_MACCATALYST = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
 		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		63AB602D2BB5DC4700254B65 /* Build configuration list for PBXProject "pkgx" */ = {
+		63AB602D2BB5DC4700254B65 /* Build configuration list for PBXProject "Prompt" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				63AB603F2BB5DC4800254B65 /* Debug */,
@@ -345,7 +325,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		63AB60412BB5DC4800254B65 /* Build configuration list for PBXNativeTarget "pkgx" */ = {
+		63AB60412BB5DC4800254B65 /* Build configuration list for PBXNativeTarget "Prompt" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				63AB60422BB5DC4800254B65 /* Debug */,
