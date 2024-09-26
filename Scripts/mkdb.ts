@@ -28,7 +28,7 @@ async function get(url: string) {
     headers["If-None-Match"] = etag;
   }
 
-  const response = await fetch("https://formulae.brew.sh/api/formula.json", { headers });
+  const response = await fetch(url, { headers });
 
   if (response.status === 304) {
     return cachedData['data'];
@@ -37,10 +37,15 @@ async function get(url: string) {
     const jsonData = await response.json();
 
     // Cache the new data along with the new ETag
-    await Deno.writeTextFile(cacheFile, JSON.stringify({etag: newEtag, data: jsonData}));
+    await Deno.writeTextFile(cacheFile, JSON.stringify({etag: newEtag, data: jsonData}, null, 2));
 
     return jsonData;
   } else {
     throw new Error(`Failed to fetch data: ${response.statusText}`);
   }
+}
+
+for (const cask of casks) {
+  const artifacts = cask.artifacts.map(artifact => artifact.app?.trim() || artifact.pkg?.trim()).filter(x => x)
+  console.log(cask.name, cask.url, artifacts)
 }
