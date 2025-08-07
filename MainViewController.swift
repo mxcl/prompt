@@ -22,6 +22,7 @@ class MainViewController: NSViewController {
         searchField.placeholderString = "Run"
         searchField.target = self
         searchField.action = #selector(searchFieldChanged(_:))
+        searchField.delegate = self
 
         // Add continuous text change monitoring
         NotificationCenter.default.addObserver(
@@ -31,9 +32,7 @@ class MainViewController: NSViewController {
             object: searchField
         )
 
-        view.addSubview(searchField)
-
-        // Create table view
+        view.addSubview(searchField)        // Create table view
         tableView = NSTableView()
         tableView.delegate = self
         tableView.dataSource = self
@@ -163,5 +162,30 @@ extension MainViewController: NSTableViewDelegate {
         }
 
         return cellView
+    }
+}
+
+// MARK: - NSTextFieldDelegate
+extension MainViewController: NSTextFieldDelegate {
+    func control(_ control: NSControl, textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
+        switch commandSelector {
+        case #selector(NSResponder.moveDown(_:)): // Down arrow
+            if apps.count > 0 {
+                view.window?.makeFirstResponder(tableView)
+                tableView.selectRowIndexes(IndexSet(integer: 0), byExtendingSelection: false)
+                tableView.scrollRowToVisible(0)
+            }
+            return true
+        case #selector(NSResponder.moveUp(_:)): // Up arrow
+            if apps.count > 0 {
+                let lastIndex = apps.count - 1
+                view.window?.makeFirstResponder(tableView)
+                tableView.selectRowIndexes(IndexSet(integer: lastIndex), byExtendingSelection: false)
+                tableView.scrollRowToVisible(lastIndex)
+            }
+            return true
+        default:
+            return false
+        }
     }
 }
