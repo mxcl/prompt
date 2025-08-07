@@ -1,18 +1,34 @@
 import Foundation
 
+// Helper function to extract query string from wildcard pattern
+func getCurrentQueryString(from predicate: NSPredicate?) -> String {
+    guard let predicate = predicate else { return "" }
+    let predicateString = predicate.predicateFormat
+    // Extract the pattern from: kMDItemDisplayName LIKE[cd] "*w*a*r*p*"
+    if let range = predicateString.range(of: "\"*") {
+        let start = predicateString.index(range.upperBound, offsetBy: 0)
+        if let endRange = predicateString.range(of: "*\"", range: start..<predicateString.endIndex) {
+            let wildcardPattern = String(predicateString[start..<endRange.lowerBound])
+            // Convert "*w*a*r*p*" back to "warp"
+            return wildcardPattern.replacingOccurrences(of: "*", with: "")
+        }
+    }
+    return ""
+}
+
 // Calculate relevance score for sorting results
 func calculateRelevanceScore(name: String, query: String) -> Int {
-    // Exact match gets highest score
+    // Fast exact match check first
     if name == query {
         return 1000
     }
 
-    // Prefix match gets very high score
+    // Fast prefix check
     if name.hasPrefix(query) {
         return 900
     }
 
-    // Contains exact query gets high score
+    // Only do more expensive contains check if needed
     if name.contains(query) {
         return 800
     }
@@ -26,6 +42,9 @@ let q = OperationQueue()
 var observer: Any?
 
 func searchApplications(queryString: String, callback: @escaping ([NSMetadataItem]) -> Void) {
+    let searchStartTime = CFAbsoluteTimeGetCurrent()
+    print("Starting search for: '\(queryString)'")
+
     // Create wildcard pattern: "sfari" becomes "*s*f*a*r*i*"
     let wildcardPattern = "*" + queryString.map { String($0) }.joined(separator: "*") + "*"
     let predicate = NSPredicate(format: "kMDItemKind == 'Application' && kMDItemDisplayName LIKE[cd] %@", wildcardPattern)
@@ -36,9 +55,13 @@ func searchApplications(queryString: String, callback: @escaping ([NSMetadataIte
     if observer == nil {
         observer = NotificationCenter.default.addObserver(forName: .NSMetadataQueryDidFinishGathering, object: query, queue: q)
         { notification in
+            let startTime = CFAbsoluteTimeGetCurrent()
 
             guard let query = notification.object as? NSMetadataQuery else { return }
             query.disableUpdates()
+
+            // Extract the current query string from the predicate instead of using captured value
+            let currentQueryString = getCurrentQueryString(from: query.predicate)
 
             var items: [NSMetadataItem] = []
             var ids = Set<String>()
@@ -52,28 +75,39 @@ func searchApplications(queryString: String, callback: @escaping ([NSMetadataIte
                 items.append(item)
             }
 
-            // Sort results by relevance: exact match, then prefix match, then others
-            let sortedResults = items.sorted { item1, item2 in
-                guard let name1 = item1.value(forAttribute: kMDItemDisplayName as String) as? String,
-                      let name2 = item2.value(forAttribute: kMDItemDisplayName as String) as? String else {
-                    return false
+            let collectTime = CFAbsoluteTimeGetCurrent()
+            print("Collected \(items.count) items in \((collectTime - startTime) * 1000)ms for \(currentQueryString)")
+
+            // Pre-calculate scores for efficient sorting
+            let lowercaseQuery = currentQueryString.lowercased()
+            let itemsWithScores = items.map { item -> (item: NSMetadataItem, score: Int, name: String) in
+                let name = item.value(forAttribute: kMDItemDisplayName as String) as? String ?? ""
+                let lowercaseName = name.lowercased()
+                let score = calculateRelevanceScore(name: lowercaseName, query: lowercaseQuery)
+
+                // Debug output for troubleshooting
+                if currentQueryString.lowercased().contains("w") {
+                    print("DEBUG [\(currentQueryString)]: '\(name)' -> score: \(score)")
                 }
 
-                let lowercaseName1 = name1.lowercased()
-                let lowercaseName2 = name2.lowercased()
-                let lowercaseQuery = queryString.lowercased()
-
-                // Calculate scores for sorting
-                let score1 = calculateRelevanceScore(name: lowercaseName1, query: lowercaseQuery)
-                let score2 = calculateRelevanceScore(name: lowercaseName2, query: lowercaseQuery)
-
-                if score1 != score2 {
-                    return score1 > score2 // Higher score first
-                }
-
-                // If scores are equal, sort alphabetically
-                return name1 < name2
+                return (item: item, score: score, name: name)
             }
+
+            let scoreTime = CFAbsoluteTimeGetCurrent()
+            print("Calculated scores in \((scoreTime - collectTime) * 1000)ms")
+
+            // Sort using pre-calculated scores
+            let sortedResults = itemsWithScores.sorted { item1, item2 in
+                if item1.score != item2.score {
+                    return item1.score > item2.score // Higher score first
+                }
+                // If scores are equal, sort alphabetically
+                return item1.name < item2.name
+            }.map { $0.item }
+
+            let sortTime = CFAbsoluteTimeGetCurrent()
+            print("Sorted \(sortedResults.count) items in \((sortTime - scoreTime) * 1000)ms")
+            print("Total callback time: \((sortTime - startTime) * 1000)ms")
 
             callback(sortedResults)
             query.enableUpdates()
