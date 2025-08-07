@@ -34,7 +34,7 @@ class MainViewController: NSViewController {
     private var searchField: NSTextField!
     private var tableView: NavigableTableView!
     private var scrollView: NSScrollView!
-    private var apps: [NSMetadataItem] = []
+    private var apps: [SearchResult] = []
 
     override func loadView() {
         view = NSView(frame: NSRect(x: 0, y: 0, width: 600, height: 400))
@@ -211,7 +211,16 @@ class MainViewController: NSViewController {
         launchApplication(app)
     }
 
-    private func launchApplication(_ item: NSMetadataItem) {
+    private func launchApplication(_ searchResult: SearchResult) {
+        switch searchResult {
+        case .installedApp(let item):
+            launchInstalledApp(item)
+        case .availableCask(let cask):
+            installCask(cask)
+        }
+    }
+
+    private func launchInstalledApp(_ item: NSMetadataItem) {
         guard let bundleId = item.value(forAttribute: kMDItemCFBundleIdentifier as String) as? String else {
             print("No bundle identifier found")
             return
@@ -219,6 +228,21 @@ class MainViewController: NSViewController {
 
         let workspace = NSWorkspace.shared
         workspace.launchApplication(withBundleIdentifier: bundleId, options: [], additionalEventParamDescriptor: nil, launchIdentifier: nil)
+    }
+
+    private func installCask(_ cask: CaskData.CaskItem) {
+        // For now, just open the homepage or show info
+        // You could implement actual Homebrew installation here
+        print("Would install cask: \(cask.token)")
+        if let homepage = cask.homepage {
+            print("Homepage: \(homepage)")
+            // Open homepage in browser
+            if let url = URL(string: homepage) {
+                NSWorkspace.shared.open(url)
+            }
+        } else {
+            print("No homepage available for \(cask.token)")
+        }
     }
 }
 
@@ -258,7 +282,16 @@ extension MainViewController: NSTableViewDelegate {
 
         if row < apps.count {
             let app = apps[row]
-            cellView?.textField?.stringValue = app.value(forAttribute: kMDItemDisplayName as String) as? String ?? "Unknown App"
+            let displayName = app.displayName
+            let suffix = app.isInstalled ? "" : " (install)"
+            cellView?.textField?.stringValue = displayName + suffix
+
+            // Style differently for installed vs available apps
+            if app.isInstalled {
+                cellView?.textField?.textColor = .labelColor
+            } else {
+                cellView?.textField?.textColor = .secondaryLabelColor
+            }
         }
 
         return cellView

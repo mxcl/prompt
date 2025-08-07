@@ -1,41 +1,177 @@
 import Foundation
 
-enum ArtifactItem: Decodable {
-    case string(String)
-    case other
-
-    init(from decoder: Decoder) throws {
-        let container = try decoder.singleValueContainer()
-        if let stringValue = try? container.decode(String.self) {
-            self = .string(stringValue)
-        } else {
-            self = .other
-        }
-    }
-}
-
-struct CaskJSON: Decodable {
+// Updated structure to match actual cask.json format
+struct CaskData: Decodable {
     let data: [CaskItem]
 
     struct CaskItem: Decodable {
+        let token: String
+        let full_token: String
         let name: [String]
-        let url: URL
-        let version: String
-        let sha256: String
-        let artifacts: [Artifact]
-        let homepage: URL
-        
-        struct Artifact: Decodable {
-            let app: [ArtifactItem]?
-            let pkg: [ArtifactItem]?
+        let desc: String?
+        let homepage: String?
+        let url: String?
+        let version: String?
+        let sha256: String?
+        private let artifacts: [ArtifactContainer]?
+
+        // Helper structure to decode artifacts
+        private struct ArtifactContainer: Decodable {
+            let app: [String]?
+
+            // Custom decoder to only extract app artifacts and ignore other types
+            init(from decoder: Decoder) throws {
+                let container = try decoder.singleValueContainer()
+                if let dict = try? container.decode([String: [String]].self),
+                   let appArray = dict["app"] {
+                    self.app = appArray
+                } else {
+                    self.app = nil
+                }
+            }
+        }
+
+        private enum CodingKeys: String, CodingKey {
+            case token, full_token, name, desc, homepage, url, version, sha256, artifacts
+        }
+
+        // Computed property to get the main app name for searching
+        var displayName: String {
+            return name.first ?? token
+        }
+
+        // Get all searchable terms (name, token, description)
+        var searchableTerms: [String] {
+            var terms = name
+            terms.append(token)
+            terms.append(full_token)
+            if let desc = desc {
+                terms.append(desc)
+            }
+            return terms
+        }
+
+        // Get app names from artifacts for deduplication
+        var appNames: [String] {
+            return artifacts?.compactMap { $0.app }.flatMap { $0 } ?? []
         }
     }
 }
 
-class Provider {
-    let json = {
-        let path = Bundle.main.path(forResource: "cask", ofType: "json")!
-        let data = try! Data(contentsOf: URL(fileURLWithPath: path))
-        return try! JSONDecoder().decode(CaskJSON.self, from: data).data
-    }()
+class CaskProvider {
+    static let shared = CaskProvider()
+
+    private let casks: [CaskData.CaskItem]
+
+    private init() {
+        print("DEBUG: Attempting to load cask.json...")
+
+        guard let path = Bundle.main.path(forResource: "cask", ofType: "json") else {
+            print("DEBUG: Could not find cask.json in bundle")
+            casks = []
+            return
+        }
+
+        print("DEBUG: Found cask.json at path: \(path)")
+
+        guard let data = try? Data(contentsOf: URL(fileURLWithPath: path)) else {
+            print("DEBUG: Could not read data from cask.json")
+            casks = []
+            return
+        }
+
+        print("DEBUG: Successfully read \(data.count) bytes from cask.json")
+
+        guard let caskData = try? JSONDecoder().decode(CaskData.self, from: data) else {
+            print("DEBUG: Failed to decode JSON from cask.json")
+            // Let's try to see what the JSON structure looks like
+            if let jsonObject = try? JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
+                print("DEBUG: JSON has top-level keys: \(jsonObject.keys)")
+                if let data = jsonObject["data"] as? [Any] {
+                    print("DEBUG: 'data' array has \(data.count) items")
+                    if let firstItem = data.first as? [String: Any] {
+                        print("DEBUG: First item keys: \(firstItem.keys)")
+                    }
+                }
+            }
+            casks = []
+            return
+        }
+
+        casks = caskData.data
+        print("DEBUG: Successfully loaded \(casks.count) casks")
+    }
+
+    func searchCasks(query: String) -> [CaskData.CaskItem] {
+        let lowercaseQuery = query.lowercased()
+
+        print("DEBUG: Searching \(casks.count) casks for '\(query)'")
+
+        let results = casks.filter { cask in
+            // Check if any searchable term contains the query
+            let matches = cask.searchableTerms.contains { term in
+                term.lowercased().contains(lowercaseQuery)
+            }
+
+            // Debug output for specific search terms
+            if query == "editor" && matches {
+                print("DEBUG: Found match for '\(query)': \(cask.token) - \(cask.displayName)")
+            }
+
+            return matches
+        }.sorted { cask1, cask2 in
+            // Sort by relevance - exact matches first, then prefix matches
+            let score1 = calculateCaskRelevanceScore(cask: cask1, query: lowercaseQuery)
+            let score2 = calculateCaskRelevanceScore(cask: cask2, query: lowercaseQuery)
+
+            if score1 != score2 {
+                return score1 > score2
+            }
+            return cask1.displayName < cask2.displayName
+        }
+
+        print("DEBUG: Found \(results.count) cask matches for '\(query)'")
+        return results
+    }
+
+    private func calculateCaskRelevanceScore(cask: CaskData.CaskItem, query: String) -> Int {
+        let displayName = cask.displayName.lowercased()
+        let token = cask.token.lowercased()
+
+        // Exact match on display name or token gets highest score
+        if displayName == query || token == query {
+            return 1000
+        }
+
+        // Prefix match on display name or token
+        if displayName.hasPrefix(query) || token.hasPrefix(query) {
+            return 900
+        }
+
+        // Contains in display name or token
+        if displayName.contains(query) || token.contains(query) {
+            return 800
+        }
+
+        // Check other name variants
+        for name in cask.name {
+            let lowercaseName = name.lowercased()
+            if lowercaseName == query {
+                return 950
+            }
+            if lowercaseName.hasPrefix(query) {
+                return 850
+            }
+            if lowercaseName.contains(query) {
+                return 750
+            }
+        }
+
+        // Match in description gets lower score
+        if let desc = cask.desc, desc.lowercased().contains(query) {
+            return 500
+        }
+
+        return 100
+    }
 }
