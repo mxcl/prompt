@@ -1,11 +1,14 @@
 import Cocoa
+import HotKey
 
 class AppDelegate: NSObject, NSApplicationDelegate {
     var windowController: MainWindowController?
+    var hotKey: HotKey?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         setupMenu()
         setupApplication()
+        setupGlobalShortcut()
         print(Provider().json)
     }
 
@@ -14,6 +17,48 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         windowController = MainWindowController()
         windowController?.showWindow(self)
+    }
+
+    private func setupGlobalShortcut() {
+        // Create hotkey for Cmd+` (backtick)
+        hotKey = HotKey(key: .grave, modifiers: [.command])
+        hotKey?.keyDownHandler = { [weak self] in
+            print("Cmd+` hotkey triggered! Toggling window...")
+            DispatchQueue.main.async {
+                self?.toggleWindow()
+            }
+        }
+        
+        if hotKey != nil {
+            print("Successfully registered global hotkey: Cmd+`")
+        } else {
+            print("Failed to register global hotkey")
+        }
+    }
+    
+    @objc private func toggleWindow() {
+        print("toggleWindow() called")
+        guard let windowController = windowController else { 
+            print("No windowController")
+            return 
+        }
+
+        if let window = windowController.window {
+            print("Window isVisible: \(window.isVisible), NSApp.isActive: \(NSApp.isActive), isKeyWindow: \(window.isKeyWindow)")
+            if window.isVisible && NSApp.isActive && window.isKeyWindow {
+                // Window is visible, app is active, and window has focus - hide it
+                print("Hiding window")
+                window.orderOut(nil)
+            } else {
+                // Show and activate the window
+                print("Showing and activating window")
+                NSApp.activate(ignoringOtherApps: true)
+                windowController.showWindow(nil)
+                window.makeKeyAndOrderFront(nil)
+            }
+        } else {
+            print("No window")
+        }
     }
 
     private func setupMenu() {
@@ -109,5 +154,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             windowController?.showWindow(nil)
         }
         return true
+    }
+
+    deinit {
+        hotKey = nil // This will automatically unregister the hotkey
     }
 }
