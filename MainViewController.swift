@@ -131,6 +131,9 @@ class MainViewController: NSViewController {
         tableView.doubleAction = #selector(tableViewDoubleClicked(_:))
         tableView.navigationDelegate = self
 
+        // Configure selection behavior
+        tableView.allowsEmptySelection = false
+
         // Create table column
         let column = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("AppName"))
         column.title = ""
@@ -194,6 +197,11 @@ class MainViewController: NSViewController {
                 print("Found \(results.count) apps")
                 self?.apps = results
                 self?.tableView.reloadData()
+
+                // Always select the first item if there are results
+                if results.count > 0 {
+                    self?.tableView.selectRowIndexes(IndexSet(integer: 0), byExtendingSelection: false)
+                }
             }
         }
     }
@@ -277,6 +285,15 @@ extension MainViewController: NSTextFieldDelegate {
                 view.window?.makeFirstResponder(tableView)
                 tableView.selectRowIndexes(IndexSet(integer: lastIndex), byExtendingSelection: false)
                 tableView.scrollRowToVisible(lastIndex)
+            }
+            return true
+        case #selector(NSResponder.insertNewline(_:)): // Enter key
+            if apps.count > 0 {
+                let selectedRow = tableView.selectedRow
+                if selectedRow >= 0 && selectedRow < apps.count {
+                    let app = apps[selectedRow]
+                    launchApplication(app)
+                }
             }
             return true
         default:
