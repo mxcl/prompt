@@ -1,8 +1,38 @@
 import Cocoa
 
+// Custom table view that can navigate back to search field
+class NavigableTableView: NSTableView {
+    weak var navigationDelegate: TableViewNavigationDelegate?
+
+    override func keyDown(with event: NSEvent) {
+        switch event.keyCode {
+        case 126: // Up arrow
+            let selectedRow = self.selectedRow
+            if selectedRow == 0 {
+                // At first item, go back to search field
+                navigationDelegate?.tableViewShouldReturnToSearchField(self)
+                return
+            }
+        case 36: // Enter/Return key
+            if self.selectedRow >= 0 {
+                navigationDelegate?.tableViewShouldLaunchSelectedApp(self)
+                return
+            }
+        default:
+            break
+        }
+        super.keyDown(with: event)
+    }
+}
+
+protocol TableViewNavigationDelegate: AnyObject {
+    func tableViewShouldReturnToSearchField(_ tableView: NSTableView)
+    func tableViewShouldLaunchSelectedApp(_ tableView: NSTableView)
+}
+
 class MainViewController: NSViewController {
     private var searchField: NSTextField!
-    private var tableView: NSTableView!
+    private var tableView: NavigableTableView!
     private var scrollView: NSScrollView!
     private var apps: [NSMetadataItem] = []
 
@@ -14,6 +44,65 @@ class MainViewController: NSViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         view.wantsLayer = true
+        setupNotifications()
+    }
+
+    override func viewDidAppear() {
+        super.viewDidAppear()
+        focusAndSelectSearchField()
+    }
+
+    private func setupNotifications() {
+        // Hide window when another app becomes active
+        NSWorkspace.shared.notificationCenter.addObserver(
+            self,
+            selector: #selector(otherAppDidActivate(_:)),
+            name: NSWorkspace.didActivateApplicationNotification,
+            object: nil
+        )
+
+        // Focus search field when window becomes key
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(windowDidBecomeKey(_:)),
+            name: NSWindow.didBecomeKeyNotification,
+            object: nil
+        )
+    }
+
+    @objc private func windowDidBecomeKey(_ notification: Notification) {
+        // Check if this notification is for our window
+        if let window = notification.object as? NSWindow, window == view.window {
+            focusAndSelectSearchField()
+        }
+    }
+
+    private func focusAndSelectSearchField() {
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            self.view.window?.makeFirstResponder(self.searchField)
+            self.searchField.selectText(nil)
+        }
+    }
+
+    @objc private func otherAppDidActivate(_ notification: Notification) {
+        guard let userInfo = notification.userInfo,
+              let activatedApp = userInfo[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication else {
+            return
+        }
+
+        // Don't hide if our own app is becoming active
+        if activatedApp.bundleIdentifier == Bundle.main.bundleIdentifier {
+            return
+        }
+
+        // Hide our window when another app becomes active
+        view.window?.orderOut(nil)
+    }
+
+    deinit {
+        NSWorkspace.shared.notificationCenter.removeObserver(self)
+        NotificationCenter.default.removeObserver(self)
     }
 
     private func setupUI() {
@@ -32,18 +121,24 @@ class MainViewController: NSViewController {
             object: searchField
         )
 
-        view.addSubview(searchField)        // Create table view
-        tableView = NSTableView()
+        view.addSubview(searchField)
+
+        // Create table view
+        tableView = NavigableTableView()
         tableView.delegate = self
         tableView.dataSource = self
         tableView.target = self
         tableView.doubleAction = #selector(tableViewDoubleClicked(_:))
+        tableView.navigationDelegate = self
 
         // Create table column
         let column = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("AppName"))
-        column.title = "Applications"
+        column.title = ""
         column.width = 560
         tableView.addTableColumn(column)
+
+        // Hide the table header
+        tableView.headerView = nil
 
         // Create scroll view
         scrollView = NSScrollView(frame: NSRect(x: 20, y: 20, width: 560, height: 320))
@@ -68,8 +163,8 @@ class MainViewController: NSViewController {
             searchField.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
             searchField.heightAnchor.constraint(equalToConstant: 24),
 
-            // Scroll view constraints
-            scrollView.topAnchor.constraint(equalTo: searchField.bottomAnchor, constant: 10),
+            // Scroll view constraints - moved up to be against search field
+            scrollView.topAnchor.constraint(equalTo: searchField.bottomAnchor, constant: 1),
             scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
             scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
             scrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -20)
@@ -186,6 +281,25 @@ extension MainViewController: NSTextFieldDelegate {
             return true
         default:
             return false
+        }
+    }
+}
+
+// MARK: - TableViewNavigationDelegate
+extension MainViewController: TableViewNavigationDelegate {
+    func tableViewShouldReturnToSearchField(_ tableView: NSTableView) {
+        view.window?.makeFirstResponder(searchField)
+        // Position cursor at end of text
+        if let fieldEditor = view.window?.fieldEditor(true, for: searchField) as? NSTextView {
+            fieldEditor.selectedRange = NSRange(location: searchField.stringValue.count, length: 0)
+        }
+    }
+
+    func tableViewShouldLaunchSelectedApp(_ tableView: NSTableView) {
+        let selectedRow = tableView.selectedRow
+        if selectedRow >= 0 && selectedRow < apps.count {
+            let app = apps[selectedRow]
+            launchApplication(app)
         }
     }
 }
