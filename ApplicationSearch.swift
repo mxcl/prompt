@@ -42,8 +42,6 @@ let q = OperationQueue()
 var observer: Any?
 
 func searchApplications(queryString: String, callback: @escaping ([NSMetadataItem]) -> Void) {
-    let searchStartTime = CFAbsoluteTimeGetCurrent()
-    print("Starting search for: '\(queryString)'")
 
     // Create wildcard pattern: "sfari" becomes "*s*f*a*r*i*"
     let wildcardPattern = "*" + queryString.map { String($0) }.joined(separator: "*") + "*"
@@ -55,8 +53,6 @@ func searchApplications(queryString: String, callback: @escaping ([NSMetadataIte
     if observer == nil {
         observer = NotificationCenter.default.addObserver(forName: .NSMetadataQueryDidFinishGathering, object: query, queue: q)
         { notification in
-            let startTime = CFAbsoluteTimeGetCurrent()
-
             guard let query = notification.object as? NSMetadataQuery else { return }
             query.disableUpdates()
 
@@ -75,26 +71,14 @@ func searchApplications(queryString: String, callback: @escaping ([NSMetadataIte
                 items.append(item)
             }
 
-            let collectTime = CFAbsoluteTimeGetCurrent()
-            print("Collected \(items.count) items in \((collectTime - startTime) * 1000)ms for \(currentQueryString)")
-
             // Pre-calculate scores for efficient sorting
             let lowercaseQuery = currentQueryString.lowercased()
             let itemsWithScores = items.map { item -> (item: NSMetadataItem, score: Int, name: String) in
                 let name = item.value(forAttribute: kMDItemDisplayName as String) as? String ?? ""
                 let lowercaseName = name.lowercased()
                 let score = calculateRelevanceScore(name: lowercaseName, query: lowercaseQuery)
-
-                // Debug output for troubleshooting
-                if currentQueryString.lowercased().contains("w") {
-                    print("DEBUG [\(currentQueryString)]: '\(name)' -> score: \(score)")
-                }
-
                 return (item: item, score: score, name: name)
             }
-
-            let scoreTime = CFAbsoluteTimeGetCurrent()
-            print("Calculated scores in \((scoreTime - collectTime) * 1000)ms")
 
             // Sort using pre-calculated scores
             let sortedResults = itemsWithScores.sorted { item1, item2 in
@@ -104,10 +88,6 @@ func searchApplications(queryString: String, callback: @escaping ([NSMetadataIte
                 // If scores are equal, sort alphabetically
                 return item1.name < item2.name
             }.map { $0.item }
-
-            let sortTime = CFAbsoluteTimeGetCurrent()
-            print("Sorted \(sortedResults.count) items in \((sortTime - scoreTime) * 1000)ms")
-            print("Total callback time: \((sortTime - startTime) * 1000)ms")
 
             callback(sortedResults)
             query.enableUpdates()
