@@ -3,26 +3,50 @@ import SwiftUI
 
 struct ContentView: View {
     @State private var searchText = ""
+    @State private var selectedApp: NSMetadataItem?
     @ObservedObject private var apps = ObservableArray()
 
     var body: some View {
         VStack {
             TextField("Run", text: $searchText)
                 .onChange(of: searchText, perform: xquery)
-            
-            List(apps.array) { item in
-                Text(item.value(forAttribute: kMDItemDisplayName as String) as! String)
+
+            List(apps.array, id: \.id) { item in
+                HStack {
+                    Text(item.value(forAttribute: kMDItemDisplayName as String) as! String)
+                    Spacer()
+                }
+                .contentShape(Rectangle())
+                .background(selectedApp?.id == item.id ? Color.accentColor.opacity(0.3) : Color.clear)
+                .onTapGesture {
+                    selectedApp = item
+                }
+                .onTapGesture(count: 2) {
+                    selectedApp = item
+                    launchApplication(item)
+                }
             }
+            .listStyle(PlainListStyle())
         }
         .padding()
     }
-    
+
     func xquery(input: String) {
         searchApplications(queryString: input) { results in
             DispatchQueue.main.async {
                 apps.array = results
             }
         }
+    }
+
+    func launchApplication(_ item: NSMetadataItem) {
+        guard let bundleId = item.value(forAttribute: kMDItemCFBundleIdentifier as String) as? String else {
+            print("No bundle identifier found")
+            return
+        }
+
+        let workspace = NSWorkspace.shared
+        workspace.launchApplication(withBundleIdentifier: bundleId, options: [], additionalEventParamDescriptor: nil, launchIdentifier: nil)
     }
 }
 
@@ -55,11 +79,11 @@ func searchApplications(queryString: String, callback: @escaping ([NSMetadataIte
     if observer == nil {
         observer = NotificationCenter.default.addObserver(forName: .NSMetadataQueryDidFinishGathering, object: query, queue: q)
         { notification in
-            
+
             guard let query = notification.object as? NSMetadataQuery else { return }
-            
+
             query.disableUpdates()
-            
+
             var results: [NSMetadataItem] = []
             var ids = Set<String>()
             for item in query.results as! [NSMetadataItem] {
@@ -74,15 +98,15 @@ func searchApplications(queryString: String, callback: @escaping ([NSMetadataIte
                 }
                 results.append(item)
             }
-            
+
             callback(results)
-            
+
             query.enableUpdates()
-//            
+//
 //            NotificationCenter.default.removeObserver(observer!)
 //            observer = nil
         }
-        
+
         query.start()
     }
 }

@@ -72,13 +72,13 @@ function parseCasks(casks: Cask[]): ParsedCask[] {
   return casks.map(cask => {
     // Get the primary name (first name in the array)
     const name = cask.name[0] || cask.token;
-    
+
     // Get description (fallback to empty string if not available)
     const description = cask.desc || '';
-    
+
     // Get homepage
     const homepage = cask.homepage || '';
-    
+
     // Generate brew install command
     const brewInstallCommand = `brew install --cask ${cask.token}`;
 
@@ -97,7 +97,7 @@ function outputResults(parsedCasks: ParsedCask[], format: 'json' | 'csv' | 'tabl
     case 'json':
       console.log(JSON.stringify(parsedCasks, null, 2));
       break;
-    
+
     case 'csv':
       console.log('token,name,description,homepage,brewInstallCommand');
       parsedCasks.forEach(cask => {
@@ -108,7 +108,7 @@ function outputResults(parsedCasks: ParsedCask[], format: 'json' | 'csv' | 'tabl
         console.log(`${cask.token},${escapedName},${escapedDesc},${escapedHomepage},${escapedCommand}`);
       });
       break;
-    
+
     case 'table':
       console.log('┌─────────────────────┬─────────────────────┬─────────────────────┬─────────────────────┬─────────────────────┐');
       console.log('│ Token               │ Name                │ Description         │ Homepage            │ Brew Install        │');
@@ -131,29 +131,29 @@ function outputResults(parsedCasks: ParsedCask[], format: 'json' | 'csv' | 'tabl
 
 async function main() {
   const args = Deno.args;
-  const format = args.includes('--csv') ? 'csv' : 
+  const format = args.includes('--csv') ? 'csv' :
                  args.includes('--table') ? 'table' : 'json';
-  
+
   const limit = args.find(arg => arg.startsWith('--limit='))?.split('=')[1];
   const limitNumber = limit ? parseInt(limit, 10) : undefined;
 
   try {
     console.error("Downloading cask data...");
     const casks = await downloadCasks();
-    
+
     console.error(`Found ${casks.length} casks`);
     console.error("Parsing cask data...");
-    
+
     let parsedCasks = parseCasks(casks);
-    
+
     if (limitNumber && limitNumber > 0) {
       parsedCasks = parsedCasks.slice(0, limitNumber);
       console.error(`Limited output to first ${limitNumber} casks`);
     }
-    
+
     console.error("Outputting results...");
     outputResults(parsedCasks, format);
-    
+
   } catch (error) {
     console.error(`Error: ${error instanceof Error ? error.message : String(error)}`);
     Deno.exit(1);
