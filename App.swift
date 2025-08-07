@@ -7,4 +7,8 @@ struct PromptApp: App {
             ContentView()
         }
     }
+    
+    init() {
+        print(Provider().json)
+    }
 }

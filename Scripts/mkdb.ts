@@ -47,5 +47,5 @@ async function get(url: string) {
 
 for (const cask of casks) {
   const artifacts = cask.artifacts.flatMap(artifact => artifact.app || artifact.pkg).filter(x => x)
-  console.log(cask.name, cask.url, artifacts, cask.homepage, cask.version, cask.sha256, cask.desc)
+  console.log(artifacts)
 }
