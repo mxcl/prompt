@@ -10,111 +10,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         setupApplication()
         setupGlobalShortcut()
         print(Provider().json)
-        
-                // Debug Gmail search after a delay
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-            debugSearchGmail()
-        }
-        
-        // Debug Chrome Apps directory search
-        DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
-            debugSearchGmailByPath()
-        }
-        
-        // Debug exact Gmail search
-        DispatchQueue.main.asyncAfter(deadline: .now() + 6.0) {
-            // debugSearchExactGmail()
-            print("=== DEBUG: Searching for exact Gmail.app ===")
-            
-            let debugQuery = NSMetadataQuery()
-            debugQuery.searchScopes = [NSMetadataQueryUserHomeScope, NSMetadataQueryLocalComputerScope]
-            
-            let predicate = NSPredicate(format: "kMDItemDisplayName == 'Gmail'")
-            debugQuery.predicate = predicate
-            
-            var debugObserver: Any?
-            debugObserver = NotificationCenter.default.addObserver(
-                forName: .NSMetadataQueryDidFinishGathering,
-                object: debugQuery,
-                queue: OperationQueue()
-            ) { notification in
-                
-                guard let query = notification.object as? NSMetadataQuery else { return }
-                query.disableUpdates()
-                
-                print("DEBUG: Found \(query.resultCount) items with exact name 'Gmail'")
-                
-                for (index, item) in (query.results as! [NSMetadataItem]).enumerated() {
-                    let displayName = item.value(forAttribute: kMDItemDisplayName as String) as? String ?? "nil"
-                    let path = item.value(forAttribute: kMDItemPath as String) as? String ?? "nil"
-                    let kind = item.value(forAttribute: kMDItemKind as String) as? String ?? "nil"
-                    let contentType = item.value(forAttribute: kMDItemContentType as String) as? String ?? "nil"
-                    let bundleId = item.value(forAttribute: kMDItemCFBundleIdentifier as String) as? String ?? "nil"
-                    
-                    print("DEBUG Item \(index):")
-                    print("  Display Name: \(displayName)")
-                    print("  Path: \(path)")
-                    print("  Kind: \(kind)")
-                    print("  Content Type: \(contentType)")
-                    print("  Bundle ID: \(bundleId)")
-                    print("  ---")
-                }
-                
-                if let observer = debugObserver {
-                    NotificationCenter.default.removeObserver(observer)
-                }
-                debugQuery.stop()
-            }
-            
-            debugQuery.start()
-        }
-        
-        // Debug direct path search
-        DispatchQueue.main.asyncAfter(deadline: .now() + 8.0) {
-            print("=== DEBUG: Searching for specific Gmail app path ===")
-            
-            let debugQuery = NSMetadataQuery()
-            debugQuery.searchScopes = [NSMetadataQueryUserHomeScope, NSMetadataQueryLocalComputerScope]
-            
-            let predicate = NSPredicate(format: "kMDItemPath == %@", "/Users/mxcl/Applications/Chrome Apps.localized/Gmail.app")
-            debugQuery.predicate = predicate
-            
-            var debugObserver: Any?
-            debugObserver = NotificationCenter.default.addObserver(
-                forName: .NSMetadataQueryDidFinishGathering,
-                object: debugQuery,
-                queue: OperationQueue()
-            ) { notification in
-                
-                guard let query = notification.object as? NSMetadataQuery else { return }
-                query.disableUpdates()
-                
-                print("DEBUG: Found \(query.resultCount) items at exact Gmail path")
-                
-                for (index, item) in (query.results as! [NSMetadataItem]).enumerated() {
-                    let displayName = item.value(forAttribute: kMDItemDisplayName as String) as? String ?? "nil"
-                    let path = item.value(forAttribute: kMDItemPath as String) as? String ?? "nil"
-                    let kind = item.value(forAttribute: kMDItemKind as String) as? String ?? "nil"
-                    let contentType = item.value(forAttribute: kMDItemContentType as String) as? String ?? "nil"
-                    let bundleId = item.value(forAttribute: kMDItemCFBundleIdentifier as String) as? String ?? "nil"
-                    
-                    print("DEBUG Item \(index):")
-                    print("  Display Name: \(displayName)")
-                    print("  Path: \(path)")
-                    print("  Kind: \(kind)")
-                    print("  Content Type: \(contentType)")
-                    print("  Bundle ID: \(bundleId)")
-                    print("  ---")
-                }
-                
-                if let observer = debugObserver {
-                    NotificationCenter.default.removeObserver(observer)
-                }
-                debugQuery.stop()
-            }
-            
-            debugQuery.start()
-        }
     }
 
     private func setupApplication() {
@@ -128,41 +23,27 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Create hotkey for Cmd+` (backtick)
         hotKey = HotKey(key: .grave, modifiers: [.command])
         hotKey?.keyDownHandler = { [weak self] in
-            print("Cmd+` hotkey triggered! Toggling window...")
             DispatchQueue.main.async {
                 self?.toggleWindow()
             }
         }
-        
-        if hotKey != nil {
-            print("Successfully registered global hotkey: Cmd+`")
-        } else {
-            print("Failed to register global hotkey")
-        }
     }
-    
+
     @objc private func toggleWindow() {
-        print("toggleWindow() called")
-        guard let windowController = windowController else { 
-            print("No windowController")
-            return 
+        guard let windowController = windowController else {
+            return
         }
 
         if let window = windowController.window {
-            print("Window isVisible: \(window.isVisible), NSApp.isActive: \(NSApp.isActive), isKeyWindow: \(window.isKeyWindow)")
             if window.isVisible && NSApp.isActive && window.isKeyWindow {
                 // Window is visible, app is active, and window has focus - hide it
-                print("Hiding window")
                 window.orderOut(nil)
             } else {
                 // Show and activate the window
-                print("Showing and activating window")
                 NSApp.activate(ignoringOtherApps: true)
                 windowController.showWindow(nil)
                 window.makeKeyAndOrderFront(nil)
             }
-        } else {
-            print("No window")
         }
     }
 

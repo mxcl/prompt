@@ -184,8 +184,6 @@ class MainViewController: NSViewController {
     }
 
     private func performSearch(_ searchText: String) {
-        print("Searching for: '\(searchText)'")
-
         guard !searchText.isEmpty else {
             apps = []
             tableView.reloadData()
@@ -194,7 +192,6 @@ class MainViewController: NSViewController {
 
         searchApplications(queryString: searchText) { [weak self] results in
             DispatchQueue.main.async {
-                print("Found \(results.count) apps")
                 self?.apps = results
                 self?.tableView.reloadData()
 
