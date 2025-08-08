@@ -64,61 +64,32 @@ class CaskProvider {
     private let casks: [CaskData.CaskItem]
 
     private init() {
-        print("DEBUG: Attempting to load cask.json...")
-
         guard let path = Bundle.main.path(forResource: "cask", ofType: "json") else {
-            print("DEBUG: Could not find cask.json in bundle")
             casks = []
             return
         }
-
-        print("DEBUG: Found cask.json at path: \(path)")
 
         guard let data = try? Data(contentsOf: URL(fileURLWithPath: path)) else {
-            print("DEBUG: Could not read data from cask.json")
             casks = []
             return
         }
 
-        print("DEBUG: Successfully read \(data.count) bytes from cask.json")
-
         guard let caskData = try? JSONDecoder().decode(CaskData.self, from: data) else {
-            print("DEBUG: Failed to decode JSON from cask.json")
-            // Let's try to see what the JSON structure looks like
-            if let jsonObject = try? JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
-                print("DEBUG: JSON has top-level keys: \(jsonObject.keys)")
-                if let data = jsonObject["data"] as? [Any] {
-                    print("DEBUG: 'data' array has \(data.count) items")
-                    if let firstItem = data.first as? [String: Any] {
-                        print("DEBUG: First item keys: \(firstItem.keys)")
-                    }
-                }
-            }
             casks = []
             return
         }
 
         casks = caskData.data
-        print("DEBUG: Successfully loaded \(casks.count) casks")
     }
 
     func searchCasks(query: String) -> [CaskData.CaskItem] {
         let lowercaseQuery = query.lowercased()
 
-        print("DEBUG: Searching \(casks.count) casks for '\(query)'")
-
         let results = casks.filter { cask in
             // Check if any searchable term contains the query
-            let matches = cask.searchableTerms.contains { term in
+            return cask.searchableTerms.contains { term in
                 term.lowercased().contains(lowercaseQuery)
             }
-
-            // Debug output for specific search terms
-            if query == "editor" && matches {
-                print("DEBUG: Found match for '\(query)': \(cask.token) - \(cask.displayName)")
-            }
-
-            return matches
         }.sorted { cask1, cask2 in
             // Sort by relevance - exact matches first, then prefix matches
             let score1 = calculateCaskRelevanceScore(cask: cask1, query: lowercaseQuery)
@@ -130,7 +101,6 @@ class CaskProvider {
             return cask1.displayName < cask2.displayName
         }
 
-        print("DEBUG: Found \(results.count) cask matches for '\(query)'")
         return results
     }
 

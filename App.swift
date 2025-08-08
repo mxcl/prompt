@@ -9,9 +9,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         setupMenu()
         setupApplication()
         setupGlobalShortcut()
-        // Test that cask data loads successfully
-        let caskCount = CaskProvider.shared.searchCasks(query: "").count
-        print("Loaded \(caskCount) casks")
+        // Initialize cask data loading
+        _ = CaskProvider.shared.searchCasks(query: "").count
     }
 
     private func setupApplication() {

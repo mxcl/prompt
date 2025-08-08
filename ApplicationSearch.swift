@@ -108,8 +108,6 @@ let q = OperationQueue()
 var observer: Any?
 
 func searchApplications(queryString: String, callback: @escaping ([SearchResult]) -> Void) {
-    print("Starting search for: '\(queryString)'")
-
     // Create wildcard pattern: "sfari" becomes "*s*f*a*r*i*"
     let wildcardPattern = "*" + queryString.map { String($0) }.joined(separator: "*") + "*"
     let predicate = NSPredicate(format: "kMDItemKind == 'Application' && kMDItemDisplayName LIKE[cd] %@", wildcardPattern)
@@ -120,83 +118,81 @@ func searchApplications(queryString: String, callback: @escaping ([SearchResult]
     if observer == nil {
         observer = NotificationCenter.default.addObserver(forName: .NSMetadataQueryDidFinishGathering, object: query, queue: q)
         { notification in
-            guard let query = notification.object as? NSMetadataQuery else { return }
-            query.disableUpdates()
-
-            // Extract the current query string from the predicate instead of using captured value
-            let currentQueryString = getCurrentQueryString(from: query.predicate)
-
-            var items: [NSMetadataItem] = []
-            var ids = Set<String>()
-            for item in query.results as! [NSMetadataItem] {
-                guard item.value(forAttribute: kMDItemDisplayName as String) is String, let id = item.value(forAttribute: kMDItemCFBundleIdentifier as String) as? String else {
-                    continue
+            
+            DispatchQueue.global().async {
+                guard let query = notification.object as? NSMetadataQuery else { return }
+                query.disableUpdates()
+                
+                // Extract the current query string from the predicate instead of using captured value
+                let currentQueryString = getCurrentQueryString(from: query.predicate)
+                
+                var items: [NSMetadataItem] = []
+                var ids = Set<String>()
+                for item in query.results as! [NSMetadataItem] {
+                    guard item.value(forAttribute: kMDItemDisplayName as String) is String, let id = item.value(forAttribute: kMDItemCFBundleIdentifier as String) as? String else {
+                        continue
+                    }
+                    guard ids.insert(id).inserted else {
+                        continue
+                    }
+                    items.append(item)
                 }
-                guard ids.insert(id).inserted else {
-                    continue
+                
+                // Convert installed apps to SearchResult and calculate scores
+                let lowercaseQuery = currentQueryString.lowercased()
+                let appResultsWithScores = items.map { item -> (result: SearchResult, score: Int, name: String) in
+                    let name = item.value(forAttribute: kMDItemDisplayName as String) as? String ?? ""
+                    let lowercaseName = name.lowercased()
+                    let score = calculateRelevanceScore(name: lowercaseName, query: lowercaseQuery)
+                    return (result: .installedApp(item), score: score, name: name)
                 }
-                items.append(item)
+                
+                // Search casks
+                let caskResults = CaskProvider.shared.searchCasks(query: currentQueryString)
+                    .prefix(20) // Limit cask results to keep performance good
+                
+                // Create a set of installed app names for deduplication
+                let installedAppNames = Set(items.compactMap { item -> String? in
+                    guard let displayName = item.value(forAttribute: kMDItemDisplayName as String) as? String else { return nil }
+                    // Get the app name by removing .app extension if present
+                    return displayName.hasSuffix(".app") ? String(displayName.dropLast(4)) : displayName
+                })
+                
+                // Filter out casks that have apps already installed
+                let filteredCaskResults = caskResults.filter { cask in
+                    // Check if any of the cask's app artifacts match installed apps
+                    let caskAppNames = cask.appNames.map { appName in
+                        // Remove .app extension from cask app names too
+                        appName.hasSuffix(".app") ? String(appName.dropLast(4)) : appName
+                    }
+                    
+                    // Only include cask if none of its apps are already installed
+                    return !caskAppNames.contains { installedAppNames.contains($0) }
+                }.map { cask -> (result: SearchResult, score: Int, name: String) in
+                    let score = calculateCaskRelevanceScore(cask: cask, query: lowercaseQuery)
+                    return (result: .availableCask(cask), score: score, name: cask.displayName)
+                }
+                
+                // Combine and sort all results
+                let allResults = appResultsWithScores + Array(filteredCaskResults)
+                let sortedResults = allResults.sorted { item1, item2 in
+                    // Always prioritize installed apps over uninstalled ones
+                    if item1.result.isInstalled != item2.result.isInstalled {
+                        return item1.result.isInstalled
+                    }
+                    
+                    // Within the same installation status, sort by score
+                    if item1.score != item2.score {
+                        return item1.score > item2.score // Higher score first
+                    }
+                    // If scores are equal, sort alphabetically
+                    return item1.name < item2.name
+                }.map { $0.result }
+                
+                callback(sortedResults)
+                query.enableUpdates()
             }
-
-            print("Found \(items.count) installed apps for '\(currentQueryString)'")
-
-            // Convert installed apps to SearchResult and calculate scores
-            let lowercaseQuery = currentQueryString.lowercased()
-            let appResultsWithScores = items.map { item -> (result: SearchResult, score: Int, name: String) in
-                let name = item.value(forAttribute: kMDItemDisplayName as String) as? String ?? ""
-                let lowercaseName = name.lowercased()
-                let score = calculateRelevanceScore(name: lowercaseName, query: lowercaseQuery)
-                return (result: .installedApp(item), score: score, name: name)
-            }
-
-            // Search casks
-            let caskResults = CaskProvider.shared.searchCasks(query: currentQueryString)
-                .prefix(20) // Limit cask results to keep performance good
-
-            // Create a set of installed app names for deduplication
-            let installedAppNames = Set(items.compactMap { item -> String? in
-                guard let displayName = item.value(forAttribute: kMDItemDisplayName as String) as? String else { return nil }
-                // Get the app name by removing .app extension if present
-                return displayName.hasSuffix(".app") ? String(displayName.dropLast(4)) : displayName
-            })
-
-            // Filter out casks that have apps already installed
-            let filteredCaskResults = caskResults.filter { cask in
-                // Check if any of the cask's app artifacts match installed apps
-                let caskAppNames = cask.appNames.map { appName in
-                    // Remove .app extension from cask app names too
-                    appName.hasSuffix(".app") ? String(appName.dropLast(4)) : appName
-                }
-
-                // Only include cask if none of its apps are already installed
-                return !caskAppNames.contains { installedAppNames.contains($0) }
-            }.map { cask -> (result: SearchResult, score: Int, name: String) in
-                let score = calculateCaskRelevanceScore(cask: cask, query: lowercaseQuery)
-                return (result: .availableCask(cask), score: score, name: cask.displayName)
-            }
-
-            print("Found \(filteredCaskResults.count) available casks for '\(currentQueryString)' (after deduplication)")
-
-            // Combine and sort all results
-            let allResults = appResultsWithScores + Array(filteredCaskResults)
-            let sortedResults = allResults.sorted { item1, item2 in
-                // Always prioritize installed apps over uninstalled ones
-                if item1.result.isInstalled != item2.result.isInstalled {
-                    return item1.result.isInstalled
-                }
-
-                // Within the same installation status, sort by score
-                if item1.score != item2.score {
-                    return item1.score > item2.score // Higher score first
-                }
-                // If scores are equal, sort alphabetically
-                return item1.name < item2.name
-            }.map { $0.result }
-
-            callback(sortedResults)
-            query.enableUpdates()
         }
-
         query.start()
     }
 }

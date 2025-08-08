@@ -222,7 +222,6 @@ class MainViewController: NSViewController {
 
     private func launchInstalledApp(_ item: NSMetadataItem) {
         guard let bundleId = item.value(forAttribute: kMDItemCFBundleIdentifier as String) as? String else {
-            print("No bundle identifier found")
             return
         }
 
@@ -233,15 +232,8 @@ class MainViewController: NSViewController {
     private func installCask(_ cask: CaskData.CaskItem) {
         // For now, just open the homepage or show info
         // You could implement actual Homebrew installation here
-        print("Would install cask: \(cask.token)")
-        if let homepage = cask.homepage {
-            print("Homepage: \(homepage)")
-            // Open homepage in browser
-            if let url = URL(string: homepage) {
-                NSWorkspace.shared.open(url)
-            }
-        } else {
-            print("No homepage available for \(cask.token)")
+        if let homepage = cask.homepage, let url = URL(string: homepage) {
+            NSWorkspace.shared.open(url)
         }
     }
 }
