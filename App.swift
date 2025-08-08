@@ -4,6 +4,7 @@ import HotKey
 class AppDelegate: NSObject, NSApplicationDelegate {
     var windowController: MainWindowController?
     var hotKey: HotKey?
+    // No custom event tap; rely on HotKey
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         setupMenu()
@@ -21,12 +22,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func setupGlobalShortcut() {
-        // Create hotkey for Cmd+` (backtick)
-        hotKey = HotKey(key: .grave, modifiers: [.command])
+        // Use Command + Option + ` (grave)
+        hotKey = HotKey(key: .grave, modifiers: [.command, .option])
         hotKey?.keyDownHandler = { [weak self] in
-            DispatchQueue.main.async {
-                self?.toggleWindow()
-            }
+            self?.toggleWindow()
         }
     }
 
@@ -144,6 +143,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     deinit {
-        hotKey = nil // This will automatically unregister the hotkey
+        hotKey = nil // unregister
     }
 }

@@ -62,6 +62,9 @@ class CaskProvider {
     static let shared = CaskProvider()
 
     private let casks: [CaskData.CaskItem]
+    private var nameIndex: [String: CaskData.CaskItem] = [:]  // displayName(lowercased) -> item
+    private var tokenIndex: [String: CaskData.CaskItem] = [:] // token -> item
+    private var appNameIndex: [String: CaskData.CaskItem] = [:] // "AppName.app" lowercased -> item
 
     private init() {
         guard let path = Bundle.main.path(forResource: "cask", ofType: "json") else {
@@ -80,6 +83,12 @@ class CaskProvider {
         }
 
         casks = caskData.data
+        for c in casks {
+            tokenIndex[c.token.lowercased()] = c
+            nameIndex[c.displayName.lowercased()] = c
+            for n in c.name { nameIndex[n.lowercased()] = c }
+            for appName in c.appNames { appNameIndex[appName.lowercased()] = c }
+        }
     }
 
     func searchCasks(query: String) -> [CaskData.CaskItem] {
@@ -143,5 +152,18 @@ class CaskProvider {
         }
 
         return 100
+    }
+
+    // Lookup by various identifiers for description augmentation
+    func lookup(byNameOrToken raw: String) -> CaskData.CaskItem? {
+        let key = raw.lowercased()
+        if let c = nameIndex[key] { return c }
+        if let c = tokenIndex[key] { return c }
+        return nil
+    }
+
+    // Lookup by .app bundle filename (case-insensitive)
+    func lookupByAppFilename(_ filename: String) -> CaskData.CaskItem? {
+        return appNameIndex[filename.lowercased()]
     }
 }

@@ -36,6 +36,23 @@ class MainViewController: NSViewController {
     private var scrollView: NSScrollView!
     private var apps: [SearchResult] = []
 
+    // MARK: - Button Actions
+    @objc private func homepageButtonPressed(_ sender: NSButton) {
+        let row = sender.tag
+        guard row >= 0 && row < apps.count else { return }
+        if case .availableCask(let cask) = apps[row], let homepage = cask.homepage, let url = URL(string: homepage) {
+            NSWorkspace.shared.open(url)
+        }
+    }
+
+    @objc private func installButtonPressed(_ sender: NSButton) {
+        let row = sender.tag
+        guard row >= 0 && row < apps.count else { return }
+        if case .availableCask(let cask) = apps[row] {
+            installCask(cask)
+        }
+    }
+
     override func loadView() {
         view = NSView(frame: NSRect(x: 0, y: 0, width: 600, height: 400))
         setupUI()
@@ -212,8 +229,8 @@ class MainViewController: NSViewController {
     }
 
     private func launchApplication(_ searchResult: SearchResult) {
-        switch searchResult {
-        case .installedAppMetadata(_, _, let bundleID):
+    switch searchResult {
+    case .installedAppMetadata(_, _, let bundleID, _):
             launchInstalledApp(bundleId: bundleID)
         case .availableCask(let cask):
             installCask(cask)
@@ -254,6 +271,11 @@ extension MainViewController: NSTableViewDelegate {
         class AppCellView: NSTableCellView {
             let titleField = NSTextField()
             let descField = NSTextField()
+            let homepageButton = NSButton(title: "Homepage", target: nil, action: nil)
+            let installButton = NSButton(title: "Install", target: nil, action: nil)
+            let buttonStack = NSStackView()
+            private var trackingAdded = false
+            private var isCask = false
 
             override init(frame frameRect: NSRect) {
                 super.init(frame: frameRect)
@@ -265,6 +287,7 @@ extension MainViewController: NSTableViewDelegate {
             }
             private func setup() {
                 identifier = identifier ?? NSUserInterfaceItemIdentifier("AppCell")
+                wantsLayer = true
 
                 for tf in [titleField, descField] {
                     tf.isBordered = false
@@ -275,20 +298,86 @@ extension MainViewController: NSTableViewDelegate {
                     addSubview(tf)
                 }
                 descField.font = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize)
-                descField.textColor = NSColor.secondaryLabelColor.withAlphaComponent(0.60)
+                descField.textColor = NSColor.tertiaryLabelColor
 
                 textField = titleField
+                // Configure subtle buttons stack (less imposing)
+                let smallFont = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize - 1)
+                for b in [homepageButton, installButton] {
+                    b.isBordered = false
+                    b.bezelStyle = .inline
+                    b.font = smallFont
+                    b.contentTintColor = .tertiaryLabelColor
+                    b.setButtonType(.momentaryChange)
+                    b.focusRingType = .none
+                }
+                if let homeImage = NSImage(systemSymbolName: "house", accessibilityDescription: "Homepage") {
+                    homepageButton.image = homeImage
+                    homepageButton.imagePosition = .imageOnly
+                    homepageButton.title = "" // image only
+                } else {
+                    homepageButton.title = "Home" // fallback
+                }
+                installButton.title = "Install…"
+                installButton.contentTintColor = .secondaryLabelColor
+                buttonStack.orientation = .horizontal
+                buttonStack.alignment = .centerY
+                buttonStack.spacing = 4
+                buttonStack.translatesAutoresizingMaskIntoConstraints = false
+                buttonStack.addArrangedSubview(homepageButton)
+                buttonStack.addArrangedSubview(installButton)
+                addSubview(buttonStack)
+
+                buttonStack.alphaValue = 1 // always visible; border appears on hover
 
                 NSLayoutConstraint.activate([
                     titleField.topAnchor.constraint(equalTo: topAnchor, constant: 4),
                     titleField.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 4),
-                    titleField.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -4),
+                    // Title should not overlap buttons
+                    titleField.trailingAnchor.constraint(lessThanOrEqualTo: buttonStack.leadingAnchor, constant: -8),
 
                     descField.topAnchor.constraint(equalTo: titleField.bottomAnchor, constant: 2),
                     descField.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 4),
-                    descField.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -4),
-                    descField.bottomAnchor.constraint(lessThanOrEqualTo: bottomAnchor, constant: -4)
+                    descField.trailingAnchor.constraint(lessThanOrEqualTo: buttonStack.leadingAnchor, constant: -8),
+                    descField.bottomAnchor.constraint(lessThanOrEqualTo: bottomAnchor, constant: -4),
+
+                    buttonStack.centerYAnchor.constraint(equalTo: centerYAnchor),
+                    buttonStack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -6)
                 ])
+            }
+
+            override func updateTrackingAreas() {
+                super.updateTrackingAreas()
+                for ta in trackingAreas { removeTrackingArea(ta) }
+                let options: NSTrackingArea.Options = [.mouseEnteredAndExited, .inVisibleRect, .activeAlways]
+                let area = NSTrackingArea(rect: bounds, options: options, owner: self, userInfo: nil)
+                addTrackingArea(area)
+                trackingAdded = true
+            }
+            override func mouseEntered(with event: NSEvent) {
+                guard isCask else { return }
+                setButtonBorders(visible: true)
+            }
+            override func mouseExited(with event: NSEvent) {
+                guard isCask else { return }
+                setButtonBorders(visible: false)
+            }
+            private func setButtonBorders(visible: Bool) {
+                for b in [homepageButton, installButton] { b.isBordered = visible }
+            }
+            func configureForInstalled() {
+                isCask = false
+                homepageButton.isHidden = true
+                installButton.isHidden = true
+                setButtonBorders(visible: false)
+            }
+            func configureForCask(homepageAvailable: Bool, row: Int) {
+                isCask = true
+                homepageButton.isHidden = !homepageAvailable
+                installButton.isHidden = false
+                homepageButton.tag = row
+                installButton.tag = row
+                setButtonBorders(visible: false)
             }
         }
 
@@ -304,21 +393,47 @@ extension MainViewController: NSTableViewDelegate {
         let displayName = app.displayName
 
         switch app {
-        case .installedAppMetadata:
+        case .installedAppMetadata(_, let path, _, let desc):
             cell.titleField.stringValue = displayName
             cell.titleField.textColor = .labelColor
-            cell.descField.isHidden = true
-        case .availableCask(let cask):
-            cell.titleField.stringValue = displayName + " (install)"
-            cell.titleField.textColor = .secondaryLabelColor
-            if let desc = cask.desc, !desc.isEmpty {
-                // Single-line trimmed description
-                let singleLine = desc.replacingOccurrences(of: "\n", with: " ")
-                cell.descField.stringValue = singleLine
+            var secondary: String? = nil
+            if let p = path {
+                secondary = p
+            }
+            if let d = desc, !d.isEmpty {
+                let d1 = d.replacingOccurrences(of: "\n", with: " ")
+                if let existing = secondary {
+                    // Combine path and description
+                    secondary = existing + " — " + d1
+                } else {
+                    secondary = d1
+                }
+            }
+            if let sec = secondary, !sec.isEmpty {
+                cell.descField.stringValue = sec
+                cell.descField.textColor = .tertiaryLabelColor
                 cell.descField.isHidden = false
             } else {
                 cell.descField.isHidden = true
             }
+            cell.configureForInstalled()
+        case .availableCask(let cask):
+            cell.titleField.stringValue = displayName + " (install)"
+            cell.titleField.textColor = .secondaryLabelColor
+            if let desc = cask.desc, !desc.isEmpty {
+                let singleLine = desc.replacingOccurrences(of: "\n", with: " ")
+                cell.descField.stringValue = singleLine
+                cell.descField.isHidden = false
+                cell.descField.textColor = .tertiaryLabelColor
+            } else {
+                cell.descField.isHidden = true
+            }
+            // Buttons
+            cell.homepageButton.target = self
+            cell.homepageButton.action = #selector(homepageButtonPressed(_:))
+            cell.installButton.target = self
+            cell.installButton.action = #selector(installButtonPressed(_:))
+            cell.configureForCask(homepageAvailable: cask.homepage != nil, row: row)
         }
 
         return cell
@@ -329,9 +444,10 @@ extension MainViewController: NSTableViewDelegate {
         guard row < apps.count else { return 24 }
         switch apps[row] {
         case .availableCask(let cask):
-            if let desc = cask.desc, !desc.isEmpty { return 40 }
-            return 24
-        case .installedAppMetadata:
+            if let desc = cask.desc, !desc.isEmpty { return 48 }
+            return 32
+        case .installedAppMetadata(_, let path, _, let desc):
+            if (path != nil) || (desc != nil && !(desc?.isEmpty ?? true)) { return 40 }
             return 24
         }
     }
