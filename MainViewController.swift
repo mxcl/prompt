@@ -213,15 +213,15 @@ class MainViewController: NSViewController {
 
     private func launchApplication(_ searchResult: SearchResult) {
         switch searchResult {
-        case .installedApp(let item):
-            launchInstalledApp(item)
+        case .installedAppMetadata(_, _, let bundleID):
+            launchInstalledApp(bundleId: bundleID)
         case .availableCask(let cask):
             installCask(cask)
         }
     }
 
-    private func launchInstalledApp(_ item: NSMetadataItem) {
-        guard let bundleId = item.value(forAttribute: kMDItemCFBundleIdentifier as String) as? String else {
+    private func launchInstalledApp(bundleId: String?) {
+        guard let bundleId = bundleId else {
             return
         }
 
@@ -250,43 +250,90 @@ extension MainViewController: NSTableViewDelegate {
     func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
         let identifier = NSUserInterfaceItemIdentifier("AppCell")
 
-        var cellView = tableView.makeView(withIdentifier: identifier, owner: nil) as? NSTableCellView
+        // Custom composite cell containing primary + optional secondary label
+        class AppCellView: NSTableCellView {
+            let titleField = NSTextField()
+            let descField = NSTextField()
 
-        if cellView == nil {
-            cellView = NSTableCellView()
-            cellView?.identifier = identifier
+            override init(frame frameRect: NSRect) {
+                super.init(frame: frameRect)
+                setup()
+            }
+            required init?(coder: NSCoder) {
+                super.init(coder: coder)
+                setup()
+            }
+            private func setup() {
+                identifier = identifier ?? NSUserInterfaceItemIdentifier("AppCell")
 
-            let textField = NSTextField()
-            textField.isBordered = false
-            textField.isEditable = false
-            textField.backgroundColor = .clear
-            textField.translatesAutoresizingMaskIntoConstraints = false
+                for tf in [titleField, descField] {
+                    tf.isBordered = false
+                    tf.isEditable = false
+                    tf.backgroundColor = .clear
+                    tf.translatesAutoresizingMaskIntoConstraints = false
+                    tf.lineBreakMode = .byTruncatingTail
+                    addSubview(tf)
+                }
+                descField.font = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize)
+                descField.textColor = NSColor.secondaryLabelColor.withAlphaComponent(0.60)
 
-            cellView?.addSubview(textField)
-            cellView?.textField = textField
+                textField = titleField
 
-            NSLayoutConstraint.activate([
-                textField.leadingAnchor.constraint(equalTo: cellView!.leadingAnchor, constant: 4),
-                textField.trailingAnchor.constraint(equalTo: cellView!.trailingAnchor, constant: -4),
-                textField.centerYAnchor.constraint(equalTo: cellView!.centerYAnchor)
-            ])
-        }
+                NSLayoutConstraint.activate([
+                    titleField.topAnchor.constraint(equalTo: topAnchor, constant: 4),
+                    titleField.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 4),
+                    titleField.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -4),
 
-        if row < apps.count {
-            let app = apps[row]
-            let displayName = app.displayName
-            let suffix = app.isInstalled ? "" : " (install)"
-            cellView?.textField?.stringValue = displayName + suffix
-
-            // Style differently for installed vs available apps
-            if app.isInstalled {
-                cellView?.textField?.textColor = .labelColor
-            } else {
-                cellView?.textField?.textColor = .secondaryLabelColor
+                    descField.topAnchor.constraint(equalTo: titleField.bottomAnchor, constant: 2),
+                    descField.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 4),
+                    descField.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -4),
+                    descField.bottomAnchor.constraint(lessThanOrEqualTo: bottomAnchor, constant: -4)
+                ])
             }
         }
 
-        return cellView
+        var cellView = tableView.makeView(withIdentifier: identifier, owner: nil) as? AppCellView
+        if cellView == nil {
+            cellView = AppCellView()
+            cellView?.identifier = identifier
+        }
+
+        guard row < apps.count, let cell = cellView else { return cellView }
+
+        let app = apps[row]
+        let displayName = app.displayName
+
+        switch app {
+        case .installedAppMetadata:
+            cell.titleField.stringValue = displayName
+            cell.titleField.textColor = .labelColor
+            cell.descField.isHidden = true
+        case .availableCask(let cask):
+            cell.titleField.stringValue = displayName + " (install)"
+            cell.titleField.textColor = .secondaryLabelColor
+            if let desc = cask.desc, !desc.isEmpty {
+                // Single-line trimmed description
+                let singleLine = desc.replacingOccurrences(of: "\n", with: " ")
+                cell.descField.stringValue = singleLine
+                cell.descField.isHidden = false
+            } else {
+                cell.descField.isHidden = true
+            }
+        }
+
+        return cell
+    }
+
+    // Dynamic row height to accommodate description for uninstalled apps
+    func tableView(_ tableView: NSTableView, heightOfRow row: Int) -> CGFloat {
+        guard row < apps.count else { return 24 }
+        switch apps[row] {
+        case .availableCask(let cask):
+            if let desc = cask.desc, !desc.isEmpty { return 40 }
+            return 24
+        case .installedAppMetadata:
+            return 24
+        }
     }
 }
 

@@ -2,25 +2,18 @@ import Foundation
 
 // Unified search result type
 enum SearchResult {
-    case installedApp(NSMetadataItem)
+    case installedAppMetadata(name: String, path: String?, bundleID: String?)
     case availableCask(CaskData.CaskItem)
 
     var displayName: String {
         switch self {
-        case .installedApp(let item):
-            return item.value(forAttribute: kMDItemDisplayName as String) as? String ?? ""
-        case .availableCask(let cask):
-            return cask.displayName
+        case .installedAppMetadata(let name, _, _): return name
+        case .availableCask(let c): return c.displayName
         }
     }
-
     var isInstalled: Bool {
-        switch self {
-        case .installedApp:
-            return true
-        case .availableCask:
-            return false
-        }
+        if case .installedAppMetadata = self { return true }
+        return false
     }
 }
 
@@ -103,96 +96,163 @@ func calculateCaskRelevanceScore(cask: CaskData.CaskItem, query: String) -> Int 
     return 100
 }
 
-let query = NSMetadataQuery()
-let q = OperationQueue()
-var observer: Any?
+private struct AppHit {
+    let name: String        // original display name
+    let lower: String       // cached lowercase
+    let path: String?
+    let bundleID: String?
+}
 
-func searchApplications(queryString: String, callback: @escaping ([SearchResult]) -> Void) {
-    // Create wildcard pattern: "sfari" becomes "*s*f*a*r*i*"
-    let wildcardPattern = "*" + queryString.map { String($0) }.joined(separator: "*") + "*"
-    let predicate = NSPredicate(format: "kMDItemKind == 'Application' && kMDItemDisplayName LIKE[cd] %@", wildcardPattern)
-    query.predicate = predicate
+private let spotlightQueue = OperationQueue()  // for NSMetadataQuery callbacks
+private let scoreQueue = DispatchQueue(label: "search.score.queue", qos: .utility)
+private var searchGeneration: UInt64 = 0
+private let generationLock = NSLock()
 
-    query.searchScopes = [NSMetadataQueryUserHomeScope, NSMetadataQueryLocalComputerScope]
+func nextGeneration() -> UInt64 {
+    generationLock.lock()
+    defer { generationLock.unlock() }
+    searchGeneration &+= 1
+    return searchGeneration
+}
 
-    if observer == nil {
-        observer = NotificationCenter.default.addObserver(forName: .NSMetadataQueryDidFinishGathering, object: query, queue: q)
-        { notification in
-            
-            DispatchQueue.global().async {
-                guard let query = notification.object as? NSMetadataQuery else { return }
-                query.disableUpdates()
-                
-                // Extract the current query string from the predicate instead of using captured value
-                let currentQueryString = getCurrentQueryString(from: query.predicate)
-                
-                var items: [NSMetadataItem] = []
-                var ids = Set<String>()
-                for item in query.results as! [NSMetadataItem] {
-                    guard item.value(forAttribute: kMDItemDisplayName as String) is String, let id = item.value(forAttribute: kMDItemCFBundleIdentifier as String) as? String else {
-                        continue
-                    }
-                    guard ids.insert(id).inserted else {
-                        continue
-                    }
-                    items.append(item)
-                }
-                
-                // Convert installed apps to SearchResult and calculate scores
-                let lowercaseQuery = currentQueryString.lowercased()
-                let appResultsWithScores = items.map { item -> (result: SearchResult, score: Int, name: String) in
-                    let name = item.value(forAttribute: kMDItemDisplayName as String) as? String ?? ""
-                    let lowercaseName = name.lowercased()
-                    let score = calculateRelevanceScore(name: lowercaseName, query: lowercaseQuery)
-                    return (result: .installedApp(item), score: score, name: name)
-                }
-                
-                // Search casks
-                let caskResults = CaskProvider.shared.searchCasks(query: currentQueryString)
-                    .prefix(20) // Limit cask results to keep performance good
-                
-                // Create a set of installed app names for deduplication
-                let installedAppNames = Set(items.compactMap { item -> String? in
-                    guard let displayName = item.value(forAttribute: kMDItemDisplayName as String) as? String else { return nil }
-                    // Get the app name by removing .app extension if present
-                    return displayName.hasSuffix(".app") ? String(displayName.dropLast(4)) : displayName
-                })
-                
-                // Filter out casks that have apps already installed
-                let filteredCaskResults = caskResults.filter { cask in
-                    // Check if any of the cask's app artifacts match installed apps
-                    let caskAppNames = cask.appNames.map { appName in
-                        // Remove .app extension from cask app names too
-                        appName.hasSuffix(".app") ? String(appName.dropLast(4)) : appName
-                    }
-                    
-                    // Only include cask if none of its apps are already installed
-                    return !caskAppNames.contains { installedAppNames.contains($0) }
-                }.map { cask -> (result: SearchResult, score: Int, name: String) in
-                    let score = calculateCaskRelevanceScore(cask: cask, query: lowercaseQuery)
-                    return (result: .availableCask(cask), score: score, name: cask.displayName)
-                }
-                
-                // Combine and sort all results
-                let allResults = appResultsWithScores + Array(filteredCaskResults)
-                let sortedResults = allResults.sorted { item1, item2 in
-                    // Always prioritize installed apps over uninstalled ones
-                    if item1.result.isInstalled != item2.result.isInstalled {
-                        return item1.result.isInstalled
-                    }
-                    
-                    // Within the same installation status, sort by score
-                    if item1.score != item2.score {
-                        return item1.score > item2.score // Higher score first
-                    }
-                    // If scores are equal, sort alphabetically
-                    return item1.name < item2.name
-                }.map { $0.result }
-                
-                callback(sortedResults)
-                query.enableUpdates()
+private let caskQueue = DispatchQueue(label: "search.cask.queue", qos: .utility)
+private var pendingCaskResults: [UInt64: [(cask: CaskData.CaskItem, score: Int)]] = [:]
+private let pendingCaskLock = NSLock()
+
+// ...existing code...
+
+func searchApplications(queryString raw: String,
+                        callback: @escaping ([SearchResult]) -> Void)
+{
+    let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+    if trimmed.isEmpty {
+        callback([])
+        return
+    }
+    
+    if trimmed.count == 1 {
+        // Optional heuristic for single char; left as-is
+    }
+    
+    let gen = nextGeneration()
+    let qLower = trimmed.lowercased()
+    
+    // DispatchGroup so we can “wait for both” (Spotlight + cask search) before combining
+    let group = DispatchGroup()
+    
+    // Kick off cask search in parallel
+    group.enter()
+    caskQueue.async {
+        let matches = CaskProvider.shared.searchCasks(query: qLower)
+        var scored: [(cask: CaskData.CaskItem, score: Int)] = []
+        scored.reserveCapacity(matches.count)
+        for c in matches {
+            let s = calculateCaskRelevanceScore(cask: c, query: qLower)
+            if s > 0 {
+                scored.append((c, s))
             }
         }
-        query.start()
+        pendingCaskLock.lock()
+        pendingCaskResults[gen] = scored
+        pendingCaskLock.unlock()
+        group.leave()
     }
+    
+    // Build wildcard subsequence pattern
+    let wildcard = "*" + qLower.map { String($0) }.joined(separator: "*") + "*"
+    
+    // Fresh query each time
+    let mdq = NSMetadataQuery()
+    mdq.operationQueue = spotlightQueue
+    mdq.searchScopes = [NSMetadataQueryUserHomeScope,
+                        NSMetadataQueryLocalComputerScope]
+    mdq.predicate = NSPredicate(
+        format: "kMDItemKind == 'Application' AND kMDItemDisplayName LIKE[cd] %@",
+        wildcard
+    )
+    mdq.notificationBatchingInterval = 0
+    
+    var obs: NSObjectProtocol?
+    obs = NotificationCenter.default.addObserver(
+        forName: .NSMetadataQueryDidFinishGathering,
+        object: mdq,
+        queue: nil) { _ in
+            
+            mdq.disableUpdates()
+            mdq.stop()
+            if let o = obs { NotificationCenter.default.removeObserver(o) }
+            
+            // Copy minimal Spotlight results
+            let rawResults = (mdq.results as? [NSMetadataItem]) ?? []
+            let limit = 300
+            var hits: [AppHit] = []
+            hits.reserveCapacity(min(rawResults.count, limit))
+            for item in rawResults.prefix(limit) {
+                guard let name = item.value(forAttribute: kMDItemDisplayName as String) as? String else { continue }
+                let path = item.value(forAttribute: kMDItemPath as String) as? String
+                let bundleID = item.value(forAttribute: kMDItemCFBundleIdentifier as String) as? String
+                hits.append(AppHit(name: name, lower: name.lowercased(), path: path, bundleID: bundleID))
+            }
+            
+            // Now move to scoring queue; wait for cask search to finish
+            scoreQueue.async {
+                // Abort if generation stale
+                generationLock.lock()
+                let currentGen = searchGeneration
+                generationLock.unlock()
+                guard gen == currentGen else { return }
+                
+                // Wait for cask parallel work
+                group.wait()
+                
+                // Fetch cask results
+                pendingCaskLock.lock()
+                let caskScored = pendingCaskResults.removeValue(forKey: gen) ?? []
+                pendingCaskLock.unlock()
+                
+                var combined: [(SearchResult, Int)] = []
+                combined.reserveCapacity(hits.count + caskScored.count)
+                
+                // Installed apps
+                var installedSet = Set<String>()
+                installedSet.reserveCapacity(hits.count)
+                for h in hits {
+                    installedSet.insert(h.lower)
+                    let s = calculateRelevanceScore(name: h.lower, query: qLower)
+                    if s > 0 {
+                        combined.append((.installedAppMetadata(name: h.name,
+                                                               path: h.path,
+                                                               bundleID: h.bundleID), s))
+                    }
+                }
+                
+                // Casks (dedupe by display name)
+                for (c, s) in caskScored {
+                    let dn = c.displayName.lowercased()
+                    if installedSet.contains(dn) { continue }
+                    combined.append((.availableCask(c), s))
+                }
+                
+                // Sort (installed first)
+                let sorted = combined.sorted {
+                    let ai = $0.0.isInstalled
+                    let bi = $1.0.isInstalled
+                    if ai != bi { return ai && !bi }
+                    if $0.1 != $1.1 { return $0.1 > $1.1 }
+                    return $0.0.displayName.localizedCaseInsensitiveCompare($1.0.displayName) == .orderedAscending
+                }.map { $0.0 }
+                
+                // Final gen check
+                generationLock.lock()
+                let stillCurrent = (gen == searchGeneration)
+                generationLock.unlock()
+                guard stillCurrent else { return }
+                
+                DispatchQueue.main.async {
+                    callback(sorted)
+                }
+            }
+        }
+    
+    mdq.start()
 }
