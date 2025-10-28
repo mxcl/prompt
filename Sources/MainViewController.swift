@@ -507,6 +507,14 @@ extension MainViewController: NSTextFieldDelegate {
             }
             return true
         case #selector(NSResponder.insertNewline(_:)): // Enter key
+            if let url = resolvedURL(from: searchField.stringValue) {
+                NSWorkspace.shared.open(url)
+                searchField.stringValue = ""
+                apps = []
+                tableView.reloadData()
+                return true
+            }
+
             if apps.count > 0 {
                 let selectedRow = tableView.selectedRow
                 if selectedRow >= 0 && selectedRow < apps.count {
