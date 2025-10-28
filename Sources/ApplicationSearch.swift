@@ -21,6 +21,18 @@ enum SearchResult {
         if case .historyCommand = self { return true }
         return false
     }
+    var identifierHash: String {
+        switch self {
+        case .installedAppMetadata(_, let path, let bundleID, _):
+            if let bundleID = bundleID, !bundleID.isEmpty { return bundleID.lowercased() }
+            if let path = path, !path.isEmpty { return path.lowercased() }
+            return displayName.lowercased()
+        case .availableCask(let cask):
+            return cask.displayName.lowercased()
+        case .historyCommand(let command):
+            return command.lowercased()
+        }
+    }
 }
 
 // Helper function to extract query string from wildcard pattern
@@ -326,7 +338,17 @@ func searchApplications(queryString raw: String,
                     if ai != bi { return ai && !bi }
                     if $0.1 != $1.1 { return $0.1 > $1.1 }
                     return $0.0.displayName.localizedCaseInsensitiveCompare($1.0.displayName) == .orderedAscending
-                }.map { $0.0 }
+                }
+
+                var seenIdentifiers = Set<String>()
+                var deduped: [SearchResult] = []
+                deduped.reserveCapacity(sorted.count)
+                for (result, _) in sorted {
+                    let id = result.identifierHash
+                    if seenIdentifiers.contains(id) { continue }
+                    seenIdentifiers.insert(id)
+                    deduped.append(result)
+                }
 
                 // Final gen check
                 generationLock.lock()
@@ -335,7 +357,7 @@ func searchApplications(queryString raw: String,
                 guard stillCurrent else { return }
 
                 DispatchQueue.main.async {
-                    callback(sorted)
+                    callback(deduped)
                 }
             }
         }
