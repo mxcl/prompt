@@ -38,6 +38,7 @@ class MainViewController: NSViewController {
     private let commandHistory = CommandHistory.shared
     private var isApplyingAutocomplete = false
     private let autocompleteSkipKeyCodes: Set<UInt16> = [51, 117] // delete, forward delete
+    private var lastManualQuery: String = ""
 
     // MARK: - Button Actions
     @objc private func homepageButtonPressed(_ sender: NSButton) {
@@ -208,9 +209,11 @@ class MainViewController: NSViewController {
         let typedText = fieldEditor?.string ?? textField.stringValue
 
         if isApplyingAutocomplete {
-            performSearch(typedText)
+            performSearch(lastManualQuery)
             return
         }
+
+        lastManualQuery = typedText
 
         var skipAutocomplete = false
         if let event = NSApp.currentEvent, event.type == .keyDown {
@@ -298,7 +301,7 @@ class MainViewController: NSViewController {
         guard selection.location == (fieldEditor.string as NSString).length, selection.length == 0 else { return false }
 
         guard let completion = commandHistory.bestCompletion(for: currentText),
-              completion.count > currentText.count else { return }
+              completion.count > currentText.count else { return false }
         if completion.lowercased() == currentText.lowercased() {
             return false
         }
