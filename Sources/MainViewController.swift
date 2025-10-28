@@ -492,6 +492,9 @@ extension MainViewController: NSTableViewDelegate {
                     tf.lineBreakMode = .byTruncatingTail
                     addSubview(tf)
                 }
+                titleField.font = NSFont.systemFont(ofSize: NSFont.systemFontSize)
+                titleField.maximumNumberOfLines = 1
+                titleField.usesSingleLineMode = true
                 descField.font = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize)
                 descField.textColor = NSColor.tertiaryLabelColor
 
@@ -567,6 +570,7 @@ extension MainViewController: NSTableViewDelegate {
             func configureForInstalled() {
                 isCask = false
                 setButtonsVisible(false)
+                applySingleLineTitle()
             }
             func configureForCask(homepageAvailable: Bool, row: Int) {
                 isCask = true
@@ -576,11 +580,15 @@ extension MainViewController: NSTableViewDelegate {
                 homepageButton.tag = row
                 installButton.tag = row
                 setButtonBorders(visible: false)
+                applySingleLineTitle()
             }
 
-            func configureForHistory() {
+            func configureForHistory(command: String) {
                 isCask = false
                 setButtonsVisible(false)
+                enableMultilineTitle()
+                titleField.stringValue = command
+                titleField.toolTip = command
                 descField.stringValue = "Recent command"
                 descField.textColor = .tertiaryLabelColor
             }
@@ -605,6 +613,29 @@ extension MainViewController: NSTableViewDelegate {
                     buttonStackWidthConstraint?.isActive = true
                 }
                 setButtonBorders(visible: false)
+            }
+
+            private func applySingleLineTitle() {
+                titleField.usesSingleLineMode = true
+                titleField.maximumNumberOfLines = 1
+                titleField.lineBreakMode = .byTruncatingTail
+                if let titleCell = titleField.cell as? NSTextFieldCell {
+                    titleCell.wraps = false
+                    titleCell.isScrollable = true
+                    titleCell.lineBreakMode = .byTruncatingTail
+                }
+                titleField.toolTip = nil
+            }
+
+            private func enableMultilineTitle() {
+                titleField.usesSingleLineMode = false
+                titleField.maximumNumberOfLines = 2
+                titleField.lineBreakMode = .byTruncatingMiddle
+                if let titleCell = titleField.cell as? NSTextFieldCell {
+                    titleCell.wraps = true
+                    titleCell.isScrollable = false
+                    titleCell.lineBreakMode = .byTruncatingMiddle
+                }
             }
         }
 
@@ -662,12 +693,10 @@ extension MainViewController: NSTableViewDelegate {
             cell.installButton.action = #selector(installButtonPressed(_:))
             cell.configureForCask(homepageAvailable: cask.homepage != nil, row: row)
         case .historyCommand(let command):
-            cell.titleField.stringValue = command
             cell.titleField.textColor = .labelColor
-            cell.descField.stringValue = "Recent command"
             cell.descField.isHidden = false
             cell.descField.textColor = .tertiaryLabelColor
-            cell.configureForHistory()
+            cell.configureForHistory(command: command)
         @unknown default:
             cell.titleField.stringValue = displayName
             cell.descField.isHidden = true
@@ -688,7 +717,7 @@ extension MainViewController: NSTableViewDelegate {
             if (path != nil) || (desc != nil && !(desc?.isEmpty ?? true)) { return 40 }
             return 24
         case .historyCommand:
-            return 32
+            return 48
         @unknown default:
             return 32
         }
