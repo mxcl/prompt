@@ -192,12 +192,46 @@ class MainViewController: NSViewController {
     }
 
     @objc private func searchFieldChanged(_ sender: NSTextField) {
+        if let url = resolvedURL(from: sender.stringValue) {
+            NSWorkspace.shared.open(url)
+            sender.stringValue = ""
+            apps = []
+            tableView.reloadData()
+            return
+        }
+
         performSearch(sender.stringValue)
     }
 
     @objc private func textDidChange(_ notification: Notification) {
         guard let textField = notification.object as? NSTextField else { return }
         performSearch(textField.stringValue)
+    }
+
+    private func resolvedURL(from input: String) -> URL? {
+        let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+
+        let fullRange = NSRange(location: 0, length: trimmed.utf16.count)
+
+        if let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue),
+           let match = detector.firstMatch(in: trimmed, options: [], range: fullRange),
+           match.range == fullRange,
+           let detectedURL = match.url {
+            if let scheme = detectedURL.scheme, !scheme.isEmpty {
+                return detectedURL
+            }
+            return URL(string: "https://\(trimmed)")
+        }
+
+        if trimmed.contains("."), !trimmed.contains(" ") {
+            if let explicitURL = URL(string: trimmed), explicitURL.scheme != nil {
+                return explicitURL
+            }
+            return URL(string: "https://\(trimmed)")
+        }
+
+        return nil
     }
 
     private func performSearch(_ searchText: String) {
