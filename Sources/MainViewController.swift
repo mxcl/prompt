@@ -466,6 +466,10 @@ extension MainViewController: NSTableViewDelegate {
             let buttonStack = NSStackView()
             private var trackingAdded = false
             private var isCask = false
+            private var titleTrailingToButtons: NSLayoutConstraint!
+            private var descTrailingToButtons: NSLayoutConstraint!
+            private var titleTrailingToEdge: NSLayoutConstraint!
+            private var descTrailingToEdge: NSLayoutConstraint!
 
             override init(frame frameRect: NSRect) {
                 super.init(frame: frameRect)
@@ -520,15 +524,19 @@ extension MainViewController: NSTableViewDelegate {
 
                 buttonStack.alphaValue = 1 // always visible; border appears on hover
 
+                titleTrailingToButtons = titleField.trailingAnchor.constraint(lessThanOrEqualTo: buttonStack.leadingAnchor, constant: -8)
+                descTrailingToButtons = descField.trailingAnchor.constraint(lessThanOrEqualTo: buttonStack.leadingAnchor, constant: -8)
+                titleTrailingToEdge = titleField.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -6)
+                descTrailingToEdge = descField.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -6)
+
                 NSLayoutConstraint.activate([
                     titleField.topAnchor.constraint(equalTo: topAnchor, constant: 4),
                     titleField.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 4),
-                    // Title should not overlap buttons
-                    titleField.trailingAnchor.constraint(lessThanOrEqualTo: buttonStack.leadingAnchor, constant: -8),
+                    titleTrailingToButtons,
 
                     descField.topAnchor.constraint(equalTo: titleField.bottomAnchor, constant: 2),
                     descField.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 4),
-                    descField.trailingAnchor.constraint(lessThanOrEqualTo: buttonStack.leadingAnchor, constant: -8),
+                    descTrailingToButtons,
                     descField.bottomAnchor.constraint(lessThanOrEqualTo: bottomAnchor, constant: -4),
 
                     buttonStack.centerYAnchor.constraint(equalTo: centerYAnchor),
@@ -557,12 +565,11 @@ extension MainViewController: NSTableViewDelegate {
             }
             func configureForInstalled() {
                 isCask = false
-                homepageButton.isHidden = true
-                installButton.isHidden = true
-                setButtonBorders(visible: false)
+                setButtonsVisible(false)
             }
             func configureForCask(homepageAvailable: Bool, row: Int) {
                 isCask = true
+                setButtonsVisible(true)
                 homepageButton.isHidden = !homepageAvailable
                 installButton.isHidden = false
                 homepageButton.tag = row
@@ -572,8 +579,19 @@ extension MainViewController: NSTableViewDelegate {
 
             func configureForHistory() {
                 isCask = false
-                homepageButton.isHidden = true
-                installButton.isHidden = true
+                setButtonsVisible(false)
+                descField.stringValue = "Recent command"
+                descField.textColor = .tertiaryLabelColor
+            }
+
+            private func setButtonsVisible(_ visible: Bool) {
+                buttonStack.isHidden = !visible
+                homepageButton.isHidden = !visible
+                installButton.isHidden = !visible
+                titleTrailingToButtons.isActive = visible
+                descTrailingToButtons.isActive = visible
+                titleTrailingToEdge.isActive = !visible
+                descTrailingToEdge.isActive = !visible
                 setButtonBorders(visible: false)
             }
         }
