@@ -332,7 +332,7 @@ class MainViewController: NSViewController {
             if case .historyCommand = app {
                 // already handled in executeHistoryCommand
             } else {
-                recordSuccessfulRun(searchField.stringValue, app.displayName)
+                recordSuccessfulRun(searchField.stringValue)
             }
         }
     }
@@ -435,7 +435,7 @@ class MainViewController: NSViewController {
                     self.tableView.scrollRowToVisible(idx)
                     let target = results[idx]
                     if self.launchApplication(target) {
-                        self.recordSuccessfulRun(trimmed, target.displayName)
+                        self.recordSuccessfulRun(trimmed)
                     }
                 }
             }
@@ -757,7 +757,7 @@ extension MainViewController: NSTextFieldDelegate {
                         if case .historyCommand = app {
                             // handled within executeHistoryCommand
                         } else {
-                            recordSuccessfulRun(searchField.stringValue, app.displayName)
+                            recordSuccessfulRun(searchField.stringValue)
                         }
                     }
                 }
@@ -805,7 +805,7 @@ extension MainViewController: TableViewNavigationDelegate {
                 if case .historyCommand = app {
                     // handled within executeHistoryCommand
                 } else {
-                    recordSuccessfulRun(searchField.stringValue, app.displayName)
+                    recordSuccessfulRun(searchField.stringValue)
                 }
             }
         }
