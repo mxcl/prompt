@@ -7,19 +7,31 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		63AB60362BB5DC4700254B65 /* pkgxApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63AB60352BB5DC4700254B65 /* pkgxApp.swift */; };
-		63AB60382BB5DC4700254B65 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63AB60372BB5DC4700254B65 /* ContentView.swift */; };
+		63527C652CA5F0CD0089DB0D /* formula.json in Resources */ = {isa = PBXBuildFile; fileRef = 63527C622CA5F0CD0089DB0D /* formula.json */; };
+		63527C662CA5F0CD0089DB0D /* cask.json in Resources */ = {isa = PBXBuildFile; fileRef = 63527C612CA5F0CD0089DB0D /* cask.json */; };
+		636F8E532E45061C00BD4256 /* ApplicationSearch.swift in Sources */ = {isa = PBXBuildFile; fileRef = 636F8E502E45061C00BD4256 /* ApplicationSearch.swift */; };
+		636F8E542E45061C00BD4256 /* MainWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 636F8E522E45061C00BD4256 /* MainWindowController.swift */; };
+		636F8E552E45061C00BD4256 /* MainViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 636F8E512E45061C00BD4256 /* MainViewController.swift */; };
+		636F8E582E4506D600BD4256 /* App.swift in Sources */ = {isa = PBXBuildFile; fileRef = 636F8E562E4506D600BD4256 /* App.swift */; };
+		636F8E592E4506D600BD4256 /* Provider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 636F8E572E4506D600BD4256 /* Provider.swift */; };
+		636F8E5B2E45092B00BD4256 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 636F8E5A2E45092B00BD4256 /* main.swift */; };
+		636F8E5E2E45156D00BD4256 /* HotKey in Frameworks */ = {isa = PBXBuildFile; productRef = 636F8E5D2E45156D00BD4256 /* HotKey */; };
 		63AB603A2BB5DC4800254B65 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 63AB60392BB5DC4800254B65 /* Assets.xcassets */; };
-		63AB603E2BB5DC4800254B65 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 63AB603D2BB5DC4800254B65 /* Preview Assets.xcassets */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		63AB60322BB5DC4700254B65 /* pkgx.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = pkgx.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		63AB60352BB5DC4700254B65 /* pkgxApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = pkgxApp.swift; sourceTree = "<group>"; };
-		63AB60372BB5DC4700254B65 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		63527C602CA5F0CD0089DB0D /* .gitignore */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
+		63527C612CA5F0CD0089DB0D /* cask.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = cask.json; sourceTree = "<group>"; };
+		63527C622CA5F0CD0089DB0D /* formula.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = formula.json; sourceTree = "<group>"; };
+		636F8E502E45061C00BD4256 /* ApplicationSearch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplicationSearch.swift; sourceTree = "<group>"; };
+		636F8E512E45061C00BD4256 /* MainViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainViewController.swift; sourceTree = "<group>"; };
+		636F8E522E45061C00BD4256 /* MainWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainWindowController.swift; sourceTree = "<group>"; };
+		636F8E562E4506D600BD4256 /* App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App.swift; sourceTree = "<group>"; };
+		636F8E572E4506D600BD4256 /* Provider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Provider.swift; sourceTree = "<group>"; };
+		636F8E5A2E45092B00BD4256 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
+		63AB60322BB5DC4700254B65 /* teaBASEv2.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = teaBASEv2.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		63AB60392BB5DC4800254B65 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		63AB603B2BB5DC4800254B65 /* pkgx.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = pkgx.entitlements; sourceTree = "<group>"; };
-		63AB603D2BB5DC4800254B65 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
+		63AB603B2BB5DC4800254B65 /* teaBASEv2.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = teaBASEv2.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -27,16 +39,43 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				636F8E5E2E45156D00BD4256 /* HotKey in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		63527C632CA5F0CD0089DB0D /* Data */ = {
+			isa = PBXGroup;
+			children = (
+				63527C602CA5F0CD0089DB0D /* .gitignore */,
+				63527C612CA5F0CD0089DB0D /* cask.json */,
+				63527C622CA5F0CD0089DB0D /* formula.json */,
+			);
+			path = Data;
+			sourceTree = "<group>";
+		};
+		63FA4ED52F6F3A1C00123456 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				636F8E5A2E45092B00BD4256 /* main.swift */,
+				636F8E562E4506D600BD4256 /* App.swift */,
+				636F8E572E4506D600BD4256 /* Provider.swift */,
+				636F8E502E45061C00BD4256 /* ApplicationSearch.swift */,
+				636F8E512E45061C00BD4256 /* MainViewController.swift */,
+				636F8E522E45061C00BD4256 /* MainWindowController.swift */,
+				63AB603B2BB5DC4800254B65 /* teaBASEv2.entitlements */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
 		63AB60292BB5DC4700254B65 = {
 			isa = PBXGroup;
 			children = (
-				63AB60342BB5DC4700254B65 /* pkgx */,
+				63FA4ED52F6F3A1C00123456 /* Sources */,
+				63AB60392BB5DC4800254B65 /* Assets.xcassets */,
+				63527C632CA5F0CD0089DB0D /* Data */,
 				63AB60332BB5DC4700254B65 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -44,49 +83,30 @@
 		63AB60332BB5DC4700254B65 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				63AB60322BB5DC4700254B65 /* pkgx.app */,
+				63AB60322BB5DC4700254B65 /* teaBASEv2.app */,
 			);
 			name = Products;
-			sourceTree = "<group>";
-		};
-		63AB60342BB5DC4700254B65 /* pkgx */ = {
-			isa = PBXGroup;
-			children = (
-				63AB60352BB5DC4700254B65 /* pkgxApp.swift */,
-				63AB60372BB5DC4700254B65 /* ContentView.swift */,
-				63AB60392BB5DC4800254B65 /* Assets.xcassets */,
-				63AB603B2BB5DC4800254B65 /* pkgx.entitlements */,
-				63AB603C2BB5DC4800254B65 /* Preview Content */,
-			);
-			path = pkgx;
-			sourceTree = "<group>";
-		};
-		63AB603C2BB5DC4800254B65 /* Preview Content */ = {
-			isa = PBXGroup;
-			children = (
-				63AB603D2BB5DC4800254B65 /* Preview Assets.xcassets */,
-			);
-			path = "Preview Content";
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		63AB60312BB5DC4700254B65 /* pkgx */ = {
+		63AB60312BB5DC4700254B65 /* teaBASEv2 */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 63AB60412BB5DC4800254B65 /* Build configuration list for PBXNativeTarget "pkgx" */;
+			buildConfigurationList = 63AB60412BB5DC4800254B65 /* Build configuration list for PBXNativeTarget "teaBASEv2" */;
 			buildPhases = (
 				63AB602E2BB5DC4700254B65 /* Sources */,
 				63AB602F2BB5DC4700254B65 /* Frameworks */,
+				63527C5A2CA5EFFD0089DB0D /* mkdb */,
 				63AB60302BB5DC4700254B65 /* Resources */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 			);
-			name = pkgx;
+			name = teaBASEv2;
 			productName = pkgx;
-			productReference = 63AB60322BB5DC4700254B65 /* pkgx.app */;
+			productReference = 63AB60322BB5DC4700254B65 /* teaBASEv2.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -104,7 +124,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 63AB602D2BB5DC4700254B65 /* Build configuration list for PBXProject "pkgx" */;
+			buildConfigurationList = 63AB602D2BB5DC4700254B65 /* Build configuration list for PBXProject "teaBASEv2" */;
 			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
@@ -113,11 +133,14 @@
 				Base,
 			);
 			mainGroup = 63AB60292BB5DC4700254B65;
+			packageReferences = (
+				636F8E5C2E45156D00BD4256 /* XCRemoteSwiftPackageReference "HotKey" */,
+			);
 			productRefGroup = 63AB60332BB5DC4700254B65 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				63AB60312BB5DC4700254B65 /* pkgx */,
+				63AB60312BB5DC4700254B65 /* teaBASEv2 */,
 			);
 		};
 /* End PBXProject section */
@@ -127,20 +150,49 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				63AB603E2BB5DC4800254B65 /* Preview Assets.xcassets in Resources */,
+				63527C652CA5F0CD0089DB0D /* formula.json in Resources */,
+				63527C662CA5F0CD0089DB0D /* cask.json in Resources */,
 				63AB603A2BB5DC4800254B65 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
 
+/* Begin PBXShellScriptBuildPhase section */
+		63527C5A2CA5EFFD0089DB0D /* mkdb */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/Scripts/mkdb.ts",
+			);
+			name = mkdb;
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(SRCROOT)/Data/formula.json",
+				"$(SRCROOT)/Data/cask.json",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "$SRCROOT/Scripts/mkdb.ts\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
 		63AB602E2BB5DC4700254B65 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				63AB60382BB5DC4700254B65 /* ContentView.swift in Sources */,
-				63AB60362BB5DC4700254B65 /* pkgxApp.swift in Sources */,
+				636F8E532E45061C00BD4256 /* ApplicationSearch.swift in Sources */,
+				636F8E582E4506D600BD4256 /* App.swift in Sources */,
+				636F8E5B2E45092B00BD4256 /* main.swift in Sources */,
+				636F8E592E4506D600BD4256 /* Provider.swift in Sources */,
+				636F8E542E45061C00BD4256 /* MainWindowController.swift in Sources */,
+				636F8E552E45061C00BD4256 /* MainViewController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -266,10 +318,10 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = pkgx/pkgx.entitlements;
+				CODE_SIGN_ENTITLEMENTS = Sources/teaBASEv2.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_ASSET_PATHS = "\"pkgx/Preview Content\"";
+				DEVELOPMENT_TEAM = ZU76A67LGU;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
@@ -280,20 +332,20 @@
 				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.4;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
-				MACOSX_DEPLOYMENT_TARGET = 14.4;
+				MACOSX_DEPLOYMENT_TARGET = 11.5;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = dev.pkgx;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.pkgx.teabasev2;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SUPPORTED_PLATFORMS = macosx;
+				SUPPORTS_MACCATALYST = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
 		};
@@ -302,10 +354,10 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = pkgx/pkgx.entitlements;
+				CODE_SIGN_ENTITLEMENTS = Sources/teaBASEv2.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_ASSET_PATHS = "\"pkgx/Preview Content\"";
+				DEVELOPMENT_TEAM = ZU76A67LGU;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
@@ -316,27 +368,27 @@
 				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.4;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
-				MACOSX_DEPLOYMENT_TARGET = 14.4;
+				MACOSX_DEPLOYMENT_TARGET = 11.5;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = dev.pkgx;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.pkgx.teabasev2;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SUPPORTED_PLATFORMS = macosx;
+				SUPPORTS_MACCATALYST = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
 		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		63AB602D2BB5DC4700254B65 /* Build configuration list for PBXProject "pkgx" */ = {
+		63AB602D2BB5DC4700254B65 /* Build configuration list for PBXProject "teaBASEv2" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				63AB603F2BB5DC4800254B65 /* Debug */,
@@ -345,7 +397,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		63AB60412BB5DC4800254B65 /* Build configuration list for PBXNativeTarget "pkgx" */ = {
+		63AB60412BB5DC4800254B65 /* Build configuration list for PBXNativeTarget "teaBASEv2" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				63AB60422BB5DC4800254B65 /* Debug */,
@@ -355,6 +407,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		636F8E5C2E45156D00BD4256 /* XCRemoteSwiftPackageReference "HotKey" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/soffes/HotKey";
+			requirement = {
+				kind = upToNextMinorVersion;
+				minimumVersion = 0.2.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		636F8E5D2E45156D00BD4256 /* HotKey */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 636F8E5C2E45156D00BD4256 /* XCRemoteSwiftPackageReference "HotKey" */;
+			productName = HotKey;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 63AB602A2BB5DC4700254B65 /* Project object */;
 }
