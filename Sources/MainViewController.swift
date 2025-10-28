@@ -340,6 +340,8 @@ class MainViewController: NSViewController {
             return launchInstalledApp(bundleId: bundleID, path: path)
         case .availableCask(let cask):
             return installCask(cask)
+        @unknown default:
+            return false
         }
     }
 
@@ -527,6 +529,13 @@ extension MainViewController: NSTableViewDelegate {
                 installButton.tag = row
                 setButtonBorders(visible: false)
             }
+
+            func configureForHistory() {
+                isCask = false
+                homepageButton.isHidden = true
+                installButton.isHidden = true
+                setButtonBorders(visible: false)
+            }
         }
 
         var cellView = tableView.makeView(withIdentifier: identifier, owner: nil) as? AppCellView
@@ -582,6 +591,17 @@ extension MainViewController: NSTableViewDelegate {
             cell.installButton.target = self
             cell.installButton.action = #selector(installButtonPressed(_:))
             cell.configureForCask(homepageAvailable: cask.homepage != nil, row: row)
+        case .historyCommand(let command):
+            cell.titleField.stringValue = command
+            cell.titleField.textColor = .labelColor
+            cell.descField.stringValue = "Recent command"
+            cell.descField.isHidden = false
+            cell.descField.textColor = .tertiaryLabelColor
+            cell.configureForHistory()
+        @unknown default:
+            cell.titleField.stringValue = displayName
+            cell.descField.isHidden = true
+            cell.configureForInstalled()
         }
 
         return cell
@@ -597,6 +617,10 @@ extension MainViewController: NSTableViewDelegate {
         case .installedAppMetadata(_, let path, _, let desc):
             if (path != nil) || (desc != nil && !(desc?.isEmpty ?? true)) { return 40 }
             return 24
+        case .historyCommand:
+            return 32
+        @unknown default:
+            return 32
         }
     }
 }

@@ -16,6 +16,10 @@
 		636F8E582E4506D600BD4256 /* App.swift in Sources */ = {isa = PBXBuildFile; fileRef = 636F8E562E4506D600BD4256 /* App.swift */; };
 		636F8E592E4506D600BD4256 /* Provider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 636F8E572E4506D600BD4256 /* Provider.swift */; };
 		636F8E5B2E45092B00BD4256 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 636F8E5A2E45092B00BD4256 /* main.swift */; };
+		63FA80022F7B1C1000A1B234 /* GlobalShortcutManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63FA80012F7B1C1000A1B234 /* GlobalShortcutManager.swift */; };
+		63FA80042F7B1C1000A1B234 /* ShortcutCaptureTextField.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63FA80032F7B1C1000A1B234 /* ShortcutCaptureTextField.swift */; };
+		63FA80062F7B1C1000A1B234 /* SettingsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63FA80052F7B1C1000A1B234 /* SettingsViewController.swift */; };
+		63FA80082F7B1C1000A1B234 /* SettingsWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63FA80072F7B1C1000A1B234 /* SettingsWindowController.swift */; };
 		636F8E5E2E45156D00BD4256 /* HotKey in Frameworks */ = {isa = PBXBuildFile; productRef = 636F8E5D2E45156D00BD4256 /* HotKey */; };
 		63AB603A2BB5DC4800254B65 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 63AB60392BB5DC4800254B65 /* Assets.xcassets */; };
 /* End PBXBuildFile section */
@@ -31,6 +35,10 @@
 		636F8E562E4506D600BD4256 /* App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App.swift; sourceTree = "<group>"; };
 		636F8E572E4506D600BD4256 /* Provider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Provider.swift; sourceTree = "<group>"; };
 		636F8E5A2E45092B00BD4256 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
+		63FA80012F7B1C1000A1B234 /* GlobalShortcutManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalShortcutManager.swift; sourceTree = "<group>"; };
+		63FA80032F7B1C1000A1B234 /* ShortcutCaptureTextField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortcutCaptureTextField.swift; sourceTree = "<group>"; };
+		63FA80052F7B1C1000A1B234 /* SettingsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewController.swift; sourceTree = "<group>"; };
+		63FA80072F7B1C1000A1B234 /* SettingsWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsWindowController.swift; sourceTree = "<group>"; };
 		63AB60322BB5DC4700254B65 /* teaBASEv2.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = teaBASEv2.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		63AB60392BB5DC4800254B65 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		63AB603B2BB5DC4800254B65 /* teaBASEv2.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = teaBASEv2.entitlements; sourceTree = "<group>"; };
@@ -68,6 +76,10 @@
 				CBF88BFA021A74AFD984F7C4 /* CommandHistory.swift */,
 				636F8E512E45061C00BD4256 /* MainViewController.swift */,
 				636F8E522E45061C00BD4256 /* MainWindowController.swift */,
+				63FA80012F7B1C1000A1B234 /* GlobalShortcutManager.swift */,
+				63FA80032F7B1C1000A1B234 /* ShortcutCaptureTextField.swift */,
+				63FA80052F7B1C1000A1B234 /* SettingsViewController.swift */,
+				63FA80072F7B1C1000A1B234 /* SettingsWindowController.swift */,
 				63AB603B2BB5DC4800254B65 /* teaBASEv2.entitlements */,
 			);
 			path = Sources;
@@ -197,6 +209,10 @@
 				636F8E592E4506D600BD4256 /* Provider.swift in Sources */,
 				636F8E542E45061C00BD4256 /* MainWindowController.swift in Sources */,
 				636F8E552E45061C00BD4256 /* MainViewController.swift in Sources */,
+				63FA80022F7B1C1000A1B234 /* GlobalShortcutManager.swift in Sources */,
+				63FA80042F7B1C1000A1B234 /* ShortcutCaptureTextField.swift in Sources */,
+				63FA80062F7B1C1000A1B234 /* SettingsViewController.swift in Sources */,
+				63FA80082F7B1C1000A1B234 /* SettingsWindowController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

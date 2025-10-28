@@ -1,9 +1,8 @@
 import Cocoa
-import HotKey
 
 class AppDelegate: NSObject, NSApplicationDelegate {
     var windowController: MainWindowController?
-    var hotKey: HotKey?
+    private var settingsWindowController: SettingsWindowController?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         setupMenu()
@@ -21,8 +20,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func setupGlobalShortcut() {
-        hotKey = HotKey(key: .escape, modifiers: [.command])
-        hotKey?.keyDownHandler = { [weak self] in self?.toggleWindow() }
+        GlobalShortcutManager.shared.register { [weak self] in
+            self?.toggleWindow()
+        }
     }
 
     @objc private func toggleWindow() {
@@ -54,6 +54,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let aboutItem = NSMenuItem(title: "About teaBASEv2", action: #selector(showAbout), keyEquivalent: "")
         aboutItem.target = self
         appMenu.addItem(aboutItem)
+
+        // Preferences menu item
+        let preferencesItem = NSMenuItem(title: "Preferences...", action: #selector(openSettings), keyEquivalent: ",")
+        preferencesItem.target = self
+        appMenu.addItem(preferencesItem)
 
         appMenu.addItem(NSMenuItem.separator())
 
@@ -126,6 +131,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.orderFrontStandardAboutPanel(nil)
     }
 
+    @objc private func openSettings() {
+        if settingsWindowController == nil {
+            settingsWindowController = SettingsWindowController()
+        }
+        settingsWindowController?.showWindow(nil)
+        settingsWindowController?.window?.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+    }
+
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         return false
     }
@@ -136,9 +150,5 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             windowController?.showWindow(nil)
         }
         return true
-    }
-
-    deinit {
-        hotKey = nil
     }
 }
