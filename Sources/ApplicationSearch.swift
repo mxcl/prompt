@@ -271,6 +271,7 @@ func searchApplications(queryString raw: String,
 
                 // Installed apps: filter system/embedded unless strongly relevant; track filenames for dedupe
                 var installedFilenames = Set<String>()  // lowercased bundle filenames
+                var existingDisplayNames = Set<String>() // lowercased display names for dedupe
                 for h in hits {
                     let s = calculateRelevanceScore(name: h.lower, query: qLower)
                     guard s > 0, shouldIncludeInstalled(path: h.path, score: s, nameLower: h.lower, queryLower: qLower) else { continue }
@@ -287,6 +288,7 @@ func searchApplications(queryString raw: String,
                                                            path: h.path,
                                                            bundleID: h.bundleID,
                                                            description: desc), s))
+                    existingDisplayNames.insert(h.lower)
                 }
 
                 // Casks: skip if any declared app filename already installed
@@ -297,11 +299,20 @@ func searchApplications(queryString raw: String,
                     }
                     if skip { continue }
                     combined.append((.availableCask(c), s))
+                    existingDisplayNames.insert(c.displayName.lowercased())
+                    existingDisplayNames.insert(c.token.lowercased())
                 }
 
                 let historyBaseScore = 5000
+                var addedHistory = Set<String>()
                 for (command, score) in historyMatches {
-                    combined.append((.historyCommand(command), historyBaseScore + score))
+                    let trimmedCommand = command.trimmingCharacters(in: .whitespacesAndNewlines)
+                    guard !trimmedCommand.isEmpty else { continue }
+                    let lower = trimmedCommand.lowercased()
+                    if existingDisplayNames.contains(lower) { continue }
+                    if addedHistory.contains(lower) { continue }
+                    addedHistory.insert(lower)
+                    combined.append((.historyCommand(trimmedCommand), historyBaseScore + score))
                 }
 
                 // Sort: history first (highest score), then installed, then others
