@@ -1,13 +1,9 @@
 import Cocoa
 import HotKey
-import ApplicationServices
 
 class AppDelegate: NSObject, NSApplicationDelegate {
     var windowController: MainWindowController?
     var hotKey: HotKey?
-    private var eventTap: CFMachPort?
-    private var runLoopSource: CFRunLoopSource?
-    // No custom event tap; rely on HotKey
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         setupMenu()
@@ -25,53 +21,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func setupGlobalShortcut() {
-        // Implement Fn + ` using a CGEvent tap (Fn not exposed via standard hotkey APIs)
-        // Grave keyCode = 50. We check for the secondaryFn flag and absence of command/option/control to reduce conflicts.
-        let mask = (1 << CGEventType.keyDown.rawValue)
-        let callback: CGEventTapCallBack = { _, type, event, refcon in
-            guard type == .keyDown else { return Unmanaged.passUnretained(event) }
-            let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
-            if keyCode == 50 { // grave
-                let flags = event.flags
-                let rawFlags = flags.rawValue
-                let secondaryFnMask: UInt64 = 0x800000 // 1 << 23
-                let hasFnBit = (rawFlags & secondaryFnMask) != 0
-                var hasFn = hasFnBit
-                if let cocoaEvent = NSEvent(cgEvent: event) { // more reliable for Fn
-                    if cocoaEvent.modifierFlags.contains(.function) { hasFn = true }
-                }
-                let hasOther = flags.contains(.maskCommand) || flags.contains(.maskAlternate) || flags.contains(.maskControl) || flags.contains(.maskShift)
-#if DEBUG
-                if hasFnBit || hasFn { print("[FnGrave] keyDown rawFlags=0x\(String(rawFlags, radix:16)) hasFnBit=\(hasFnBit) hasFn=\(hasFn) hasOther=\(hasOther)") }
-#endif
-                if hasFn && !hasOther {
-                    if let ref = refcon {
-                        let delegate = Unmanaged<AppDelegate>.fromOpaque(ref).takeUnretainedValue()
-                        DispatchQueue.main.async { delegate.toggleWindow() }
-                        return nil // swallow
-                    }
-                }
-            }
-            return Unmanaged.passUnretained(event)
-        }
-        let refcon = UnsafeMutableRawPointer(Unmanaged.passUnretained(self).toOpaque())
-        if let tap = CGEvent.tapCreate(tap: .cgSessionEventTap,
-                                       place: .headInsertEventTap,
-                                       options: .defaultTap,
-                                       eventsOfInterest: CGEventMask(mask),
-                                       callback: callback,
-                                       userInfo: refcon) {
-            eventTap = tap
-            runLoopSource = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0)
-            if let src = runLoopSource {
-                CFRunLoopAddSource(CFRunLoopGetCurrent(), src, .commonModes)
-                CGEvent.tapEnable(tap: tap, enable: true)
-            }
-        } else {
-            // Fallback (if tap fails): keep previous Command+Option+`
-            hotKey = HotKey(key: .grave, modifiers: [.command, .option])
-            hotKey?.keyDownHandler = { [weak self] in self?.toggleWindow() }
-        }
+        hotKey = HotKey(key: .escape, modifiers: [.command])
+        hotKey?.keyDownHandler = { [weak self] in self?.toggleWindow() }
     }
 
     @objc private func toggleWindow() {
@@ -189,7 +140,5 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     deinit {
         hotKey = nil
-        if let tap = eventTap { CGEvent.tapEnable(tap: tap, enable: false) }
-        if let src = runLoopSource { CFRunLoopRemoveSource(CFRunLoopGetCurrent(), src, .commonModes) }
     }
 }
