@@ -55,7 +55,7 @@ class MainViewController: NSViewController {
         let row = sender.tag
         guard row >= 0 && row < apps.count else { return }
         if case .availableCask(let cask) = apps[row] {
-            installCask(cask)
+            _ = installCask(cask)
         }
     }
 
@@ -349,11 +349,11 @@ class MainViewController: NSViewController {
                 }
 
                 self.apps = finalResults
-                self?.tableView.reloadData()
+                self.tableView.reloadData()
 
                 // Always select the first item if there are results
                 if finalResults.count > 0 {
-                    self?.tableView.selectRowIndexes(IndexSet(integer: 0), byExtendingSelection: false)
+                    self.tableView.selectRowIndexes(IndexSet(integer: 0), byExtendingSelection: false)
                 }
             }
         }
