@@ -4,15 +4,21 @@ import Foundation
 enum SearchResult {
     case installedAppMetadata(name: String, path: String?, bundleID: String?, description: String?)
     case availableCask(CaskData.CaskItem)
+    case historyCommand(String)
 
     var displayName: String {
         switch self {
-    case .installedAppMetadata(let name, _, _, _): return name
+        case .installedAppMetadata(let name, _, _, _): return name
         case .availableCask(let c): return c.displayName
+        case .historyCommand(let command): return command
         }
     }
     var isInstalled: Bool {
         if case .installedAppMetadata = self { return true }
+        return false
+    }
+    var isHistory: Bool {
+        if case .historyCommand = self { return true }
         return false
     }
 }
@@ -184,6 +190,7 @@ func searchApplications(queryString raw: String,
 
     let gen = nextGeneration()
     let qLower = trimmed.lowercased()
+    let historyMatches = CommandHistory.shared.fuzzyMatches(for: trimmed, limit: 8)
 
     // DispatchGroup so we can “wait for both” (Spotlight + cask search) before combining
     let group = DispatchGroup()
@@ -292,8 +299,17 @@ func searchApplications(queryString raw: String,
                     combined.append((.availableCask(c), s))
                 }
 
-                // Sort (installed first)
+                let historyBaseScore = 5000
+                for (command, score) in historyMatches {
+                    combined.append((.historyCommand(command), historyBaseScore + score))
+                }
+
+                // Sort: history first (highest score), then installed, then others
                 let sorted = combined.sorted {
+                    let aHistory = $0.0.isHistory
+                    let bHistory = $1.0.isHistory
+                    if aHistory != bHistory { return aHistory && !bHistory }
+
                     let ai = $0.0.isInstalled
                     let bi = $1.0.isInstalled
                     if ai != bi { return ai && !bi }

@@ -340,6 +340,8 @@ class MainViewController: NSViewController {
             return launchInstalledApp(bundleId: bundleID, path: path)
         case .availableCask(let cask):
             return installCask(cask)
+        case .historyCommand(let command):
+            return executeHistoryCommand(command)
         @unknown default:
             return false
         }
@@ -402,6 +404,13 @@ class MainViewController: NSViewController {
             return NSWorkspace.shared.open(url)
         }
         return false
+    }
+
+    private func executeHistoryCommand(_ command: String) -> Bool {
+        let trimmed = command.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return false }
+        searchField.stringValue = trimmed
+        return openURLIfPossible(from: trimmed)
     }
 }
 
