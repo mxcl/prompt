@@ -252,6 +252,9 @@ class MainViewController: NSViewController {
         let value = (input ?? searchField.stringValue)
             .trimmingCharacters(in: .whitespacesAndNewlines)
         guard !value.isEmpty else { return }
+        #if DEBUG
+        print("[CommandHistory] Recording '\(value)'")
+        #endif
         commandHistory.record(value)
     }
 
@@ -334,23 +337,49 @@ class MainViewController: NSViewController {
         let workspace = NSWorkspace.shared
 
         if let bundleId = bundleId {
+            #if DEBUG
+            print("[Launch] Attempting bundle id \(bundleId)")
+            #endif
             if workspace.launchApplication(withBundleIdentifier: bundleId,
                                            options: [],
                                            additionalEventParamDescriptor: nil,
                                            launchIdentifier: nil) {
+                #if DEBUG
+                print("[Launch] bundle id launch succeeded")
+                #endif
                 return true
             }
             if let running = NSRunningApplication.runningApplications(withBundleIdentifier: bundleId).first {
                 running.activate(options: [.activateIgnoringOtherApps])
+                #if DEBUG
+                print("[Launch] bundle id already running; activated")
+                #endif
                 return true
             }
+            #if DEBUG
+            print("[Launch] bundle id launch failed; checking path")
+            #endif
         }
 
         if let path = path {
             let url = URL(fileURLWithPath: path)
-            if workspace.open(url) { return true }
+            #if DEBUG
+            print("[Launch] Attempting path \(path)")
+            #endif
+            if workspace.open(url) {
+                #if DEBUG
+                print("[Launch] path open succeeded")
+                #endif
+                return true
+            }
+            #if DEBUG
+            print("[Launch] path open failed")
+            #endif
         }
 
+        #if DEBUG
+        print("[Launch] launch failed for bundleId=\(bundleId ?? "nil") path=\(path ?? "nil")")
+        #endif
         return false
     }
 
