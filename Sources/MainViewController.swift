@@ -223,12 +223,16 @@ class MainViewController: NSViewController {
         }
 
         var appliedCompletion = false
+        var appliedCompletionText: String?
         if !skipAutocomplete {
             appliedCompletion = applyAutocompleteIfNeeded(for: textField, originalText: typedText)
+            if appliedCompletion {
+                appliedCompletionText = textField.stringValue
+            }
         }
 
         if appliedCompletion {
-            performSearch(typedText)
+            performSearch(appliedCompletionText ?? typedText)
         } else {
             performSearch(textField.stringValue)
         }
