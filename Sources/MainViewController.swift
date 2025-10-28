@@ -470,6 +470,7 @@ extension MainViewController: NSTableViewDelegate {
             private var descTrailingToButtons: NSLayoutConstraint!
             private var titleTrailingToEdge: NSLayoutConstraint!
             private var descTrailingToEdge: NSLayoutConstraint!
+            private var buttonStackWidthConstraint: NSLayoutConstraint?
 
             override init(frame frameRect: NSRect) {
                 super.init(frame: frameRect)
@@ -586,12 +587,23 @@ extension MainViewController: NSTableViewDelegate {
 
             private func setButtonsVisible(_ visible: Bool) {
                 buttonStack.isHidden = !visible
-                homepageButton.isHidden = !visible
-                installButton.isHidden = !visible
                 titleTrailingToButtons.isActive = visible
                 descTrailingToButtons.isActive = visible
                 titleTrailingToEdge.isActive = !visible
                 descTrailingToEdge.isActive = !visible
+                if visible {
+                    buttonStackWidthConstraint?.isActive = false
+                    buttonStackWidthConstraint = nil
+                    homepageButton.isHidden = false
+                    installButton.isHidden = false
+                } else {
+                    homepageButton.isHidden = true
+                    installButton.isHidden = true
+                    if buttonStackWidthConstraint == nil {
+                        buttonStackWidthConstraint = buttonStack.widthAnchor.constraint(equalToConstant: 0)
+                    }
+                    buttonStackWidthConstraint?.isActive = true
+                }
                 setButtonBorders(visible: false)
             }
         }
