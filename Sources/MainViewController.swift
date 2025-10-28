@@ -323,23 +323,30 @@ class MainViewController: NSViewController {
     @discardableResult
     private func launchApplication(_ searchResult: SearchResult) -> Bool {
         switch searchResult {
-        case .installedAppMetadata(_, _, let bundleID, _):
-            return launchInstalledApp(bundleId: bundleID)
+        case .installedAppMetadata(_, let path, let bundleID, _):
+            return launchInstalledApp(bundleId: bundleID, path: path)
         case .availableCask(let cask):
             return installCask(cask)
         }
     }
 
-    private func launchInstalledApp(bundleId: String?) -> Bool {
-        guard let bundleId = bundleId else {
-            return false
+    private func launchInstalledApp(bundleId: String?, path: String?) -> Bool {
+        let workspace = NSWorkspace.shared
+
+        if let bundleId = bundleId,
+           workspace.launchApplication(withBundleIdentifier: bundleId,
+                                       options: [],
+                                       additionalEventParamDescriptor: nil,
+                                       launchIdentifier: nil) {
+            return true
         }
 
-        let workspace = NSWorkspace.shared
-        return workspace.launchApplication(withBundleIdentifier: bundleId,
-                                           options: [],
-                                           additionalEventParamDescriptor: nil,
-                                           launchIdentifier: nil)
+        if let path = path {
+            let url = URL(fileURLWithPath: path)
+            if workspace.open(url) { return true }
+        }
+
+        return false
     }
 
     private func installCask(_ cask: CaskData.CaskItem) -> Bool {
