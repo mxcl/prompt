@@ -12,6 +12,7 @@
 		636F8E532E45061C00BD4256 /* ApplicationSearch.swift in Sources */ = {isa = PBXBuildFile; fileRef = 636F8E502E45061C00BD4256 /* ApplicationSearch.swift */; };
 		636F8E542E45061C00BD4256 /* MainWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 636F8E522E45061C00BD4256 /* MainWindowController.swift */; };
 		636F8E552E45061C00BD4256 /* MainViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 636F8E512E45061C00BD4256 /* MainViewController.swift */; };
+		F423BD0F3064F53E64E5364F /* CommandHistory.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBF88BFA021A74AFD984F7C4 /* CommandHistory.swift */; };
 		636F8E582E4506D600BD4256 /* App.swift in Sources */ = {isa = PBXBuildFile; fileRef = 636F8E562E4506D600BD4256 /* App.swift */; };
 		636F8E592E4506D600BD4256 /* Provider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 636F8E572E4506D600BD4256 /* Provider.swift */; };
 		636F8E5B2E45092B00BD4256 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 636F8E5A2E45092B00BD4256 /* main.swift */; };
@@ -26,6 +27,7 @@
 		636F8E502E45061C00BD4256 /* ApplicationSearch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplicationSearch.swift; sourceTree = "<group>"; };
 		636F8E512E45061C00BD4256 /* MainViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainViewController.swift; sourceTree = "<group>"; };
 		636F8E522E45061C00BD4256 /* MainWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainWindowController.swift; sourceTree = "<group>"; };
+		CBF88BFA021A74AFD984F7C4 /* CommandHistory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandHistory.swift; sourceTree = "<group>"; };
 		636F8E562E4506D600BD4256 /* App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App.swift; sourceTree = "<group>"; };
 		636F8E572E4506D600BD4256 /* Provider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Provider.swift; sourceTree = "<group>"; };
 		636F8E5A2E45092B00BD4256 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
@@ -63,6 +65,7 @@
 				636F8E562E4506D600BD4256 /* App.swift */,
 				636F8E572E4506D600BD4256 /* Provider.swift */,
 				636F8E502E45061C00BD4256 /* ApplicationSearch.swift */,
+				CBF88BFA021A74AFD984F7C4 /* CommandHistory.swift */,
 				636F8E512E45061C00BD4256 /* MainViewController.swift */,
 				636F8E522E45061C00BD4256 /* MainWindowController.swift */,
 				63AB603B2BB5DC4800254B65 /* teaBASEv2.entitlements */,
@@ -188,6 +191,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				636F8E532E45061C00BD4256 /* ApplicationSearch.swift in Sources */,
+				F423BD0F3064F53E64E5364F /* CommandHistory.swift in Sources */,
 				636F8E582E4506D600BD4256 /* App.swift in Sources */,
 				636F8E5B2E45092B00BD4256 /* main.swift in Sources */,
 				636F8E592E4506D600BD4256 /* Provider.swift in Sources */,
