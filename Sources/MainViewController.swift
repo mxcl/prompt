@@ -35,6 +35,9 @@ class MainViewController: NSViewController {
     private var tableView: NavigableTableView!
     private var scrollView: NSScrollView!
     private var apps: [SearchResult] = []
+    private let commandHistory = CommandHistory.shared
+    private var isApplyingAutocomplete = false
+    private let autocompleteSkipKeyCodes: Set<UInt16> = [51, 117] // delete, forward delete
 
     // MARK: - Button Actions
     @objc private func homepageButtonPressed(_ sender: NSButton) {
@@ -192,19 +195,30 @@ class MainViewController: NSViewController {
     }
 
     @objc private func searchFieldChanged(_ sender: NSTextField) {
-        if let url = resolvedURL(from: sender.stringValue) {
-            NSWorkspace.shared.open(url)
-            sender.stringValue = ""
-            apps = []
-            tableView.reloadData()
+        let current = sender.stringValue
+        if openURLIfPossible(from: current) {
             return
         }
-
-        performSearch(sender.stringValue)
+        performSearch(current)
     }
 
     @objc private func textDidChange(_ notification: Notification) {
         guard let textField = notification.object as? NSTextField else { return }
+        if isApplyingAutocomplete {
+            performSearch(textField.stringValue)
+            return
+        }
+
+        var skipAutocomplete = false
+        if let event = NSApp.currentEvent, event.type == .keyDown {
+            if autocompleteSkipKeyCodes.contains(event.keyCode) {
+                skipAutocomplete = true
+            }
+        }
+        if !skipAutocomplete {
+            applyAutocompleteIfNeeded(for: textField)
+        }
+
         performSearch(textField.stringValue)
     }
 
@@ -234,6 +248,48 @@ class MainViewController: NSViewController {
         return nil
     }
 
+    private func recordSuccessfulRun(using input: String? = nil) {
+        let value = (input ?? searchField.stringValue)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !value.isEmpty else { return }
+        commandHistory.record(value)
+    }
+
+    private func openURLIfPossible(from input: String) -> Bool {
+        guard let url = resolvedURL(from: input) else { return false }
+        let success = NSWorkspace.shared.open(url)
+        if success {
+            recordSuccessfulRun(using: input)
+        }
+        searchField.stringValue = ""
+        apps = []
+        tableView.reloadData()
+        return success
+    }
+
+    private func applyAutocompleteIfNeeded(for textField: NSTextField) {
+        guard let fieldEditor = view.window?.fieldEditor(true, for: textField) as? NSTextView else { return }
+        let currentText = fieldEditor.string
+        guard !currentText.isEmpty else { return }
+
+        let selection = fieldEditor.selectedRange
+        guard selection.location == currentText.count, selection.length == 0 else { return }
+
+        guard let completion = commandHistory.bestCompletion(for: currentText),
+              completion.count > currentText.count else { return }
+        if completion.lowercased() == currentText.lowercased() {
+            return
+        }
+
+        isApplyingAutocomplete = true
+        defer { isApplyingAutocomplete = false }
+
+        fieldEditor.string = completion
+        textField.stringValue = completion
+        let highlightRange = NSRange(location: currentText.count, length: completion.count - currentText.count)
+        fieldEditor.setSelectedRange(highlightRange)
+    }
+
     private func performSearch(_ searchText: String) {
         guard !searchText.isEmpty else {
             apps = []
@@ -259,33 +315,40 @@ class MainViewController: NSViewController {
         guard row >= 0 && row < apps.count else { return }
 
         let app = apps[row]
-        launchApplication(app)
-    }
-
-    private func launchApplication(_ searchResult: SearchResult) {
-    switch searchResult {
-    case .installedAppMetadata(_, _, let bundleID, _):
-            launchInstalledApp(bundleId: bundleID)
-        case .availableCask(let cask):
-            installCask(cask)
+        if launchApplication(app) {
+            recordSuccessfulRun(using: app.displayName)
         }
     }
 
-    private func launchInstalledApp(bundleId: String?) {
+    @discardableResult
+    private func launchApplication(_ searchResult: SearchResult) -> Bool {
+        switch searchResult {
+        case .installedAppMetadata(_, _, let bundleID, _):
+            return launchInstalledApp(bundleId: bundleID)
+        case .availableCask(let cask):
+            return installCask(cask)
+        }
+    }
+
+    private func launchInstalledApp(bundleId: String?) -> Bool {
         guard let bundleId = bundleId else {
-            return
+            return false
         }
 
         let workspace = NSWorkspace.shared
-        workspace.launchApplication(withBundleIdentifier: bundleId, options: [], additionalEventParamDescriptor: nil, launchIdentifier: nil)
+        return workspace.launchApplication(withBundleIdentifier: bundleId,
+                                           options: [],
+                                           additionalEventParamDescriptor: nil,
+                                           launchIdentifier: nil)
     }
 
-    private func installCask(_ cask: CaskData.CaskItem) {
+    private func installCask(_ cask: CaskData.CaskItem) -> Bool {
         // For now, just open the homepage or show info
         // You could implement actual Homebrew installation here
         if let homepage = cask.homepage, let url = URL(string: homepage) {
-            NSWorkspace.shared.open(url)
+            return NSWorkspace.shared.open(url)
         }
+        return false
     }
 }
 
@@ -507,11 +570,8 @@ extension MainViewController: NSTextFieldDelegate {
             }
             return true
         case #selector(NSResponder.insertNewline(_:)): // Enter key
-            if let url = resolvedURL(from: searchField.stringValue) {
-                NSWorkspace.shared.open(url)
-                searchField.stringValue = ""
-                apps = []
-                tableView.reloadData()
+            let current = searchField.stringValue
+            if openURLIfPossible(from: current) {
                 return true
             }
 
@@ -519,13 +579,33 @@ extension MainViewController: NSTextFieldDelegate {
                 let selectedRow = tableView.selectedRow
                 if selectedRow >= 0 && selectedRow < apps.count {
                     let app = apps[selectedRow]
-                    launchApplication(app)
+                    if launchApplication(app) {
+                        recordSuccessfulRun(using: app.displayName)
+                    }
                 }
             }
             return true
         default:
             return false
         }
+    }
+
+    func control(_ control: NSControl,
+                 textView: NSTextView,
+                 completions words: [String],
+                 forPartialWordRange charRange: NSRange,
+                 indexOfSelectedItem index: UnsafeMutablePointer<Int>?) -> [String] {
+        let fullText = textView.string as NSString
+        guard charRange.location != NSNotFound,
+              NSMaxRange(charRange) <= fullText.length else {
+            return []
+        }
+        let prefix = fullText.substring(with: charRange)
+        let matches = commandHistory.completions(matching: prefix)
+        if !matches.isEmpty {
+            index?.pointee = 0
+        }
+        return matches
     }
 }
 
@@ -543,7 +623,9 @@ extension MainViewController: TableViewNavigationDelegate {
         let selectedRow = tableView.selectedRow
         if selectedRow >= 0 && selectedRow < apps.count {
             let app = apps[selectedRow]
-            launchApplication(app)
+            if launchApplication(app) {
+                recordSuccessfulRun(using: app.displayName)
+            }
         }
     }
 }
