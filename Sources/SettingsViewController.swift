@@ -4,11 +4,21 @@ import HotKey
 final class SettingsViewController: NSViewController {
     private let captureField = ShortcutCaptureTextField(frame: .zero)
     private let feedbackLabel = NSTextField(labelWithString: "")
-    private let infoLabel = NSTextField(labelWithString: "Click the field, then press your preferred shortcut using modifier keys.")
+    private let infoLabel = NSTextField(wrappingLabelWithString: "Click the field, then press your preferred shortcut while holding at least one modifier key.")
     private let resetButton = NSButton(title: "Reset to Default", target: nil, action: nil)
 
+    private let containerStack: NSStackView = {
+        let stack = NSStackView()
+        stack.orientation = .vertical
+        stack.alignment = .leading
+        stack.spacing = 12
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        stack.edgeInsets = NSEdgeInsets(top: 24, left: 24, bottom: 24, right: 24)
+        return stack
+    }()
+
     override func loadView() {
-        view = NSView(frame: NSRect(x: 0, y: 0, width: 320, height: 160))
+        view = NSView(frame: NSRect(x: 0, y: 0, width: 380, height: 200))
         setupUI()
         configureCallbacks()
         updateDisplayedShortcut()
@@ -20,52 +30,55 @@ final class SettingsViewController: NSViewController {
     }
 
     private func setupUI() {
-        view.translatesAutoresizingMaskIntoConstraints = false
-
         let titleLabel = NSTextField(labelWithString: "Global Shortcut")
         titleLabel.font = NSFont.systemFont(ofSize: 18, weight: .semibold)
 
-        captureField.translatesAutoresizingMaskIntoConstraints = false
         captureField.placeholderString = "Press shortcut"
+        captureField.translatesAutoresizingMaskIntoConstraints = false
+        captureField.widthAnchor.constraint(greaterThanOrEqualToConstant: 220).isActive = true
+        captureField.heightAnchor.constraint(equalToConstant: 32).isActive = true
+        captureField.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        captureField.setContentCompressionResistancePriority(.defaultHigh, for: .horizontal)
 
-        feedbackLabel.translatesAutoresizingMaskIntoConstraints = false
         feedbackLabel.textColor = .secondaryLabelColor
+        feedbackLabel.font = NSFont.systemFont(ofSize: 12)
+        feedbackLabel.stringValue = ""
 
-        infoLabel.translatesAutoresizingMaskIntoConstraints = false
         infoLabel.textColor = .secondaryLabelColor
-        infoLabel.lineBreakMode = .byWordWrapping
-        infoLabel.maximumNumberOfLines = 0
 
-        resetButton.translatesAutoresizingMaskIntoConstraints = false
-        resetButton.target = self
-        resetButton.action = #selector(resetButtonPressed)
+        resetButton.bezelStyle = .rounded
 
-        view.addSubview(titleLabel)
-        view.addSubview(infoLabel)
-        view.addSubview(captureField)
-        view.addSubview(feedbackLabel)
-        view.addSubview(resetButton)
+        let shortcutStack = NSStackView(views: [captureField])
+        shortcutStack.orientation = .horizontal
+        shortcutStack.alignment = .centerY
+        shortcutStack.spacing = 0
+        shortcutStack.translatesAutoresizingMaskIntoConstraints = false
+
+        let buttonRow = NSStackView()
+        buttonRow.orientation = .horizontal
+        buttonRow.alignment = .centerY
+        buttonRow.spacing = 8
+        buttonRow.translatesAutoresizingMaskIntoConstraints = false
+
+        let spacer = NSView()
+        spacer.translatesAutoresizingMaskIntoConstraints = false
+        spacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        buttonRow.addArrangedSubview(spacer)
+        buttonRow.addArrangedSubview(resetButton)
+
+        containerStack.addArrangedSubview(titleLabel)
+        containerStack.addArrangedSubview(infoLabel)
+        containerStack.addArrangedSubview(shortcutStack)
+        containerStack.addArrangedSubview(feedbackLabel)
+        containerStack.addArrangedSubview(buttonRow)
+
+        view.addSubview(containerStack)
 
         NSLayoutConstraint.activate([
-            titleLabel.topAnchor.constraint(equalTo: view.topAnchor, constant: 20),
-            titleLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
-
-            infoLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 8),
-            infoLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
-            infoLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
-
-            captureField.topAnchor.constraint(equalTo: infoLabel.bottomAnchor, constant: 16),
-            captureField.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
-            captureField.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
-            captureField.heightAnchor.constraint(equalToConstant: 32),
-
-            feedbackLabel.topAnchor.constraint(equalTo: captureField.bottomAnchor, constant: 8),
-            feedbackLabel.leadingAnchor.constraint(equalTo: captureField.leadingAnchor),
-            feedbackLabel.trailingAnchor.constraint(equalTo: captureField.trailingAnchor),
-
-            resetButton.topAnchor.constraint(equalTo: feedbackLabel.bottomAnchor, constant: 16),
-            resetButton.leadingAnchor.constraint(equalTo: captureField.leadingAnchor),
-            resetButton.bottomAnchor.constraint(lessThanOrEqualTo: view.bottomAnchor, constant: -20)
+            containerStack.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            containerStack.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            containerStack.topAnchor.constraint(equalTo: view.topAnchor),
+            containerStack.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
     }
 
