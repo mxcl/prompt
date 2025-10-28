@@ -39,6 +39,7 @@ class MainViewController: NSViewController {
     private var isApplyingAutocomplete = false
     private let autocompleteSkipKeyCodes: Set<UInt16> = [51, 117] // delete, forward delete
     private var lastManualQuery: String = ""
+    private var preferredHistoryCommand: String?
 
     // MARK: - Button Actions
     @objc private func homepageButtonPressed(_ sender: NSButton) {
@@ -223,19 +224,15 @@ class MainViewController: NSViewController {
         }
 
         var appliedCompletion = false
-        var appliedCompletionText: String?
+        preferredHistoryCommand = nil
         if !skipAutocomplete {
             appliedCompletion = applyAutocompleteIfNeeded(for: textField, originalText: typedText)
             if appliedCompletion {
-                appliedCompletionText = textField.stringValue
+                preferredHistoryCommand = textField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
             }
         }
 
-        if appliedCompletion {
-            performSearch(appliedCompletionText ?? typedText)
-        } else {
-            performSearch(textField.stringValue)
-        }
+        performSearch(typedText)
     }
 
     private func resolvedURL(from input: String) -> URL? {
@@ -329,11 +326,24 @@ class MainViewController: NSViewController {
 
         searchApplications(queryString: searchText) { [weak self] results in
             DispatchQueue.main.async {
-                self?.apps = results
+                guard let self = self else { return }
+                var finalResults = results
+                if let preferred = self.preferredHistoryCommand?.lowercased(),
+                   let index = finalResults.firstIndex(where: {
+                       if case .historyCommand(let cmd) = $0 {
+                           return cmd.lowercased() == preferred
+                       }
+                       return false
+                   }) {
+                    let match = finalResults.remove(at: index)
+                    finalResults.insert(match, at: 0)
+                }
+
+                self.apps = finalResults
                 self?.tableView.reloadData()
 
                 // Always select the first item if there are results
-                if results.count > 0 {
+                if finalResults.count > 0 {
                     self?.tableView.selectRowIndexes(IndexSet(integer: 0), byExtendingSelection: false)
                 }
             }
