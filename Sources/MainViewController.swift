@@ -329,7 +329,11 @@ class MainViewController: NSViewController {
 
         let app = apps[row]
         if launchApplication(app) {
-            recordSuccessfulRun(searchField.stringValue, app.displayName)
+            if case .historyCommand = app {
+                // already handled in executeHistoryCommand
+            } else {
+                recordSuccessfulRun(searchField.stringValue, app.displayName)
+            }
         }
     }
 
@@ -409,8 +413,35 @@ class MainViewController: NSViewController {
     private func executeHistoryCommand(_ command: String) -> Bool {
         let trimmed = command.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return false }
+
+        if openURLIfPossible(from: trimmed) {
+            return true
+        }
+
         searchField.stringValue = trimmed
-        return openURLIfPossible(from: trimmed)
+
+        searchApplications(queryString: trimmed) { [weak self] results in
+            guard let self = self else { return }
+
+            DispatchQueue.main.async {
+                self.apps = results
+                self.tableView.reloadData()
+
+                if let idx = results.firstIndex(where: {
+                    if case .historyCommand = $0 { return false }
+                    return true
+                }) {
+                    self.tableView.selectRowIndexes(IndexSet(integer: idx), byExtendingSelection: false)
+                    self.tableView.scrollRowToVisible(idx)
+                    let target = results[idx]
+                    if self.launchApplication(target) {
+                        self.recordSuccessfulRun(trimmed, target.displayName)
+                    }
+                }
+            }
+        }
+
+        return true
     }
 }
 
@@ -664,7 +695,11 @@ extension MainViewController: NSTextFieldDelegate {
                 if selectedRow >= 0 && selectedRow < apps.count {
                     let app = apps[selectedRow]
                     if launchApplication(app) {
-                        recordSuccessfulRun(searchField.stringValue, app.displayName)
+                        if case .historyCommand = app {
+                            // handled within executeHistoryCommand
+                        } else {
+                            recordSuccessfulRun(searchField.stringValue, app.displayName)
+                        }
                     }
                 }
             }
@@ -708,7 +743,11 @@ extension MainViewController: TableViewNavigationDelegate {
         if selectedRow >= 0 && selectedRow < apps.count {
             let app = apps[selectedRow]
             if launchApplication(app) {
-                recordSuccessfulRun(searchField.stringValue, app.displayName)
+                if case .historyCommand = app {
+                    // handled within executeHistoryCommand
+                } else {
+                    recordSuccessfulRun(searchField.stringValue, app.displayName)
+                }
             }
         }
     }
