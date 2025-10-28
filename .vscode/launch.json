@@ -1,0 +1,17 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Run teaBASE",
+            "type": "lldb",
+            "request": "launch",
+            "program": "/bin/zsh",
+            "args": [
+                "-lc",
+                "./Scripts/run"
+            ],
+            "cwd": "${workspaceFolder}",
+            "terminal": "integrated"
+        }
+    ]
+}
