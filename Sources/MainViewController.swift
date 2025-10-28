@@ -333,12 +333,17 @@ class MainViewController: NSViewController {
     private func launchInstalledApp(bundleId: String?, path: String?) -> Bool {
         let workspace = NSWorkspace.shared
 
-        if let bundleId = bundleId,
-           workspace.launchApplication(withBundleIdentifier: bundleId,
-                                       options: [],
-                                       additionalEventParamDescriptor: nil,
-                                       launchIdentifier: nil) {
-            return true
+        if let bundleId = bundleId {
+            if workspace.launchApplication(withBundleIdentifier: bundleId,
+                                           options: [],
+                                           additionalEventParamDescriptor: nil,
+                                           launchIdentifier: nil) {
+                return true
+            }
+            if let running = NSRunningApplication.runningApplications(withBundleIdentifier: bundleId).first {
+                running.activate(options: [.activateIgnoringOtherApps])
+                return true
+            }
         }
 
         if let path = path {
