@@ -248,21 +248,31 @@ class MainViewController: NSViewController {
         return nil
     }
 
-    private func recordSuccessfulRun(using input: String? = nil) {
-        let value = (input ?? searchField.stringValue)
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !value.isEmpty else { return }
-        #if DEBUG
-        print("[CommandHistory] Recording '\(value)'")
-        #endif
-        commandHistory.record(value)
+    private func recordSuccessfulRun(_ inputs: String...) {
+        recordSuccessfulRun(inputs)
+    }
+
+    private func recordSuccessfulRun(_ inputs: [String]) {
+        guard !inputs.isEmpty else { return }
+        var seen = Set<String>()
+        for raw in inputs {
+            let value = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !value.isEmpty else { continue }
+            let key = value.lowercased()
+            if seen.contains(key) { continue }
+            seen.insert(key)
+            #if DEBUG
+            print("[CommandHistory] Recording '\(value)'")
+            #endif
+            commandHistory.record(value)
+        }
     }
 
     private func openURLIfPossible(from input: String) -> Bool {
         guard let url = resolvedURL(from: input) else { return false }
         let success = NSWorkspace.shared.open(url)
         if success {
-            recordSuccessfulRun(using: input)
+            recordSuccessfulRun(input)
         }
         searchField.stringValue = ""
         apps = []
@@ -319,7 +329,7 @@ class MainViewController: NSViewController {
 
         let app = apps[row]
         if launchApplication(app) {
-            recordSuccessfulRun(using: app.displayName)
+            recordSuccessfulRun(searchField.stringValue, app.displayName)
         }
     }
 
@@ -621,7 +631,7 @@ extension MainViewController: NSTextFieldDelegate {
                 if selectedRow >= 0 && selectedRow < apps.count {
                     let app = apps[selectedRow]
                     if launchApplication(app) {
-                        recordSuccessfulRun(using: app.displayName)
+                        recordSuccessfulRun(searchField.stringValue, app.displayName)
                     }
                 }
             }
@@ -665,7 +675,7 @@ extension MainViewController: TableViewNavigationDelegate {
         if selectedRow >= 0 && selectedRow < apps.count {
             let app = apps[selectedRow]
             if launchApplication(app) {
-                recordSuccessfulRun(using: app.displayName)
+                recordSuccessfulRun(searchField.stringValue, app.displayName)
             }
         }
     }
