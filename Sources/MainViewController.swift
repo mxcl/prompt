@@ -206,6 +206,8 @@ class MainViewController: NSViewController {
 
     @objc private func textDidChange(_ notification: Notification) {
         guard let textField = notification.object as? NSTextField else { return }
+        let currentEvent = NSApp.currentEvent
+        let isKeyDown = currentEvent?.type == .keyDown
         let fieldEditor = view.window?.fieldEditor(true, for: textField) as? NSTextView
         let typedText = fieldEditor?.string ?? textField.stringValue
 
@@ -214,13 +216,17 @@ class MainViewController: NSViewController {
             return
         }
 
-        lastManualQuery = typedText
+        if isKeyDown {
+            lastManualQuery = typedText
+        }
 
         var skipAutocomplete = false
-        if let event = NSApp.currentEvent, event.type == .keyDown {
+        if isKeyDown, let event = currentEvent {
             if autocompleteSkipKeyCodes.contains(event.keyCode) {
                 skipAutocomplete = true
             }
+        } else if !isKeyDown {
+            skipAutocomplete = true
         }
 
         var appliedCompletion = false
@@ -232,7 +238,7 @@ class MainViewController: NSViewController {
             }
         }
 
-        performSearch(typedText)
+        performSearch(lastManualQuery)
     }
 
     private func resolvedURL(from input: String) -> URL? {
