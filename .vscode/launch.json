@@ -3,7 +3,7 @@
     "configurations": [
         {
             "name": "Run teaBASE",
-            "type": "lldb",
+            "type": "lldb-dap",
             "request": "launch",
             "program": "/bin/zsh",
             "args": [
