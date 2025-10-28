@@ -204,8 +204,11 @@ class MainViewController: NSViewController {
 
     @objc private func textDidChange(_ notification: Notification) {
         guard let textField = notification.object as? NSTextField else { return }
+        let fieldEditor = view.window?.fieldEditor(true, for: textField) as? NSTextView
+        let typedText = fieldEditor?.string ?? textField.stringValue
+
         if isApplyingAutocomplete {
-            performSearch(textField.stringValue)
+            performSearch(typedText)
             return
         }
 
@@ -215,11 +218,17 @@ class MainViewController: NSViewController {
                 skipAutocomplete = true
             }
         }
+
+        var appliedCompletion = false
         if !skipAutocomplete {
-            applyAutocompleteIfNeeded(for: textField)
+            appliedCompletion = applyAutocompleteIfNeeded(for: textField, originalText: typedText)
         }
 
-        performSearch(textField.stringValue)
+        if appliedCompletion {
+            performSearch(typedText)
+        } else {
+            performSearch(textField.stringValue)
+        }
     }
 
     private func resolvedURL(from input: String) -> URL? {
@@ -280,18 +289,18 @@ class MainViewController: NSViewController {
         return success
     }
 
-    private func applyAutocompleteIfNeeded(for textField: NSTextField) {
-        guard let fieldEditor = view.window?.fieldEditor(true, for: textField) as? NSTextView else { return }
-        let currentText = fieldEditor.string
-        guard !currentText.isEmpty else { return }
+    private func applyAutocompleteIfNeeded(for textField: NSTextField, originalText: String) -> Bool {
+        guard let fieldEditor = view.window?.fieldEditor(true, for: textField) as? NSTextView else { return false }
+        let currentText = originalText
+        guard !currentText.isEmpty else { return false }
 
         let selection = fieldEditor.selectedRange
-        guard selection.location == currentText.count, selection.length == 0 else { return }
+        guard selection.location == (fieldEditor.string as NSString).length, selection.length == 0 else { return false }
 
         guard let completion = commandHistory.bestCompletion(for: currentText),
               completion.count > currentText.count else { return }
         if completion.lowercased() == currentText.lowercased() {
-            return
+            return false
         }
 
         isApplyingAutocomplete = true
@@ -301,6 +310,7 @@ class MainViewController: NSViewController {
         textField.stringValue = completion
         let highlightRange = NSRange(location: currentText.count, length: completion.count - currentText.count)
         fieldEditor.setSelectedRange(highlightRange)
+        return true
     }
 
     private func performSearch(_ searchText: String) {
