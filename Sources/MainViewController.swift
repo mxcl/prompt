@@ -40,6 +40,7 @@ class MainViewController: NSViewController {
     private let autocompleteSkipKeyCodes: Set<UInt16> = [51, 117] // delete, forward delete
     private var lastManualQuery: String = ""
     private var preferredHistoryCommand: String?
+    private var suppressNextManualUpdate = false
 
     // MARK: - Button Actions
     @objc private func homepageButtonPressed(_ sender: NSButton) {
@@ -216,9 +217,10 @@ class MainViewController: NSViewController {
             return
         }
 
-        if isKeyDown {
+        if isKeyDown && !suppressNextManualUpdate {
             lastManualQuery = typedText
         }
+        suppressNextManualUpdate = false
 
         var skipAutocomplete = false
         if isKeyDown, let event = currentEvent {
@@ -235,6 +237,7 @@ class MainViewController: NSViewController {
             appliedCompletion = applyAutocompleteIfNeeded(for: textField, originalText: typedText)
             if appliedCompletion {
                 preferredHistoryCommand = textField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+                suppressNextManualUpdate = true
             }
         }
 
