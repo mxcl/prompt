@@ -56,7 +56,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         appMenu.addItem(aboutItem)
 
         // Preferences menu item
-        let preferencesItem = NSMenuItem(title: "Preferences...", action: #selector(openSettings), keyEquivalent: ",")
+        let preferencesItem = NSMenuItem(title: "Preferences…", action: #selector(openSettings), keyEquivalent: ",")
         preferencesItem.target = self
         appMenu.addItem(preferencesItem)
 
