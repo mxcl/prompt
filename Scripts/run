@@ -1,7 +1,7 @@
 #!/usr/bin/env pkgx +xcbeautify bash
 
 # Build and run script for teaBASEv2
-# This script builds the Xcode project and launches the resulting application
+# This script invokes Scripts/build and launches the resulting application
 
 cd "$(dirname "$0")/.."  # Change to project root directory
 
@@ -22,19 +22,18 @@ DERIVED_DATA_PATH="$PROJECT_DIR/DerivedData"
 DESTINATION="platform=macOS,arch=arm64,name=My Mac"
 
 # Parse command line arguments
-CLEAN_BUILD=false
-RELEASE_BUILD=false
 SKIP_RUN=false
+BUILD_ARGS=()
 
 while [[ $# -gt 0 ]]; do
   case $1 in
     --clean)
-      CLEAN_BUILD=true
+      BUILD_ARGS+=("--clean")
       shift
       ;;
     --release)
-      RELEASE_BUILD=true
       BUILD_CONFIG="Release"
+      BUILD_ARGS+=("--release")
       shift
       ;;
     --build-only)
@@ -45,10 +44,12 @@ while [[ $# -gt 0 ]]; do
       echo "Usage: $0 [OPTIONS]"
       echo ""
       echo "Options:"
-      echo "  --clean       Clean build (removes build artifacts first)"
+      echo "  --clean       Clean build (passes through to Scripts/build)"
       echo "  --release     Build in Release configuration (default: Debug)"
       echo "  --build-only  Build only, don't run the application"
       echo "  --help        Show this help message"
+      echo ""
+      echo "For build-only workflows, you can also use Scripts/build directly."
       exit 0
       ;;
     *)
@@ -59,37 +60,8 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-# Clean if requested
-if [ "$CLEAN_BUILD" = true ]; then
-  echo -e "${YELLOW}🧹 Cleaning build artifacts...${NC}"
-  rm -rf "$DERIVED_DATA_PATH"
-  xcodebuild clean \
-    -project "$PROJECT_DIR/$PROJECT_NAME.xcodeproj" \
-    -scheme "$SCHEME_NAME" \
-    -configuration "$BUILD_CONFIG" \
-    -destination "$DESTINATION" \
-    > /dev/null 2>&1 || true
-  echo -e "${GREEN}✓ Clean complete${NC}"
-fi
-
-# Build the project
-echo -e "${YELLOW}🔨 Building $PROJECT_NAME ($BUILD_CONFIG)...${NC}"
-xcodebuild build \
-  -project "$PROJECT_DIR/$PROJECT_NAME.xcodeproj" \
-  -scheme "$SCHEME_NAME" \
-  -configuration "$BUILD_CONFIG" \
-  -destination "$DESTINATION" \
-  -derivedDataPath "$DERIVED_DATA_PATH" \
-  | xcbeautify
-
-BUILD_RESULT=$?
-
-if [ $BUILD_RESULT -ne 0 ]; then
-  echo -e "${RED}❌ Build failed${NC}"
-  exit $BUILD_RESULT
-fi
-
-echo -e "${GREEN}✓ Build successful${NC}"
+# Build the project using the shared build script
+./Scripts/build "${BUILD_ARGS[@]}"
 
 # Find the built app
 APP_PATH="$DERIVED_DATA_PATH/Build/Products/$BUILD_CONFIG/$PROJECT_NAME.app"
