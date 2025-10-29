@@ -1,0 +1,25 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "teaBASE: kill running app",
+            "type": "shell",
+            "command": "pkill -f teaBASEv2 || true",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "teaBASE: build",
+            "type": "shell",
+            "command": "./Scripts/build",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "dependsOn": "teaBASE: kill running app",
+            "dependsOrder": "sequence",
+            "problemMatcher": []
+        }
+    ]
+}

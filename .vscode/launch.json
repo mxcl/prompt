@@ -2,16 +2,14 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Run teaBASE",
-            "type": "lldb-dap",
+            "name": "Run teaBASE (Debug)",
+            "type": "lldb",
             "request": "launch",
-            "program": "/bin/zsh",
-            "args": [
-                "-lc",
-                "./Scripts/run"
-            ],
+            "preLaunchTask": "teaBASE: build",
+            "program": "${workspaceFolder}/DerivedData/Build/Products/Debug/teaBASEv2.app/Contents/MacOS/teaBASEv2",
             "cwd": "${workspaceFolder}",
-            "terminal": "integrated"
+            "stopOnEntry": false,
+            "internalConsoleOptions": "neverOpen"
         }
     ]
 }
