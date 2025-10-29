@@ -41,6 +41,7 @@ class MainViewController: NSViewController {
     private var lastManualQuery: String = ""
     private var preferredHistoryCommand: String?
     private var suppressNextManualUpdate = false
+    private var preferredHistoryQuery: String?
 
     // MARK: - Button Actions
     @objc private func homepageButtonPressed(_ sender: NSButton) {
@@ -233,10 +234,12 @@ class MainViewController: NSViewController {
 
         var appliedCompletion = false
         preferredHistoryCommand = nil
+        preferredHistoryQuery = nil
         if !skipAutocomplete {
             appliedCompletion = applyAutocompleteIfNeeded(for: textField, originalText: typedText)
             if appliedCompletion {
                 preferredHistoryCommand = textField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+                preferredHistoryQuery = lastManualQuery
                 suppressNextManualUpdate = true
             }
         }
@@ -338,6 +341,8 @@ class MainViewController: NSViewController {
                 guard let self = self else { return }
                 var finalResults = results
                 if let preferred = self.preferredHistoryCommand?.lowercased(),
+                   let preferredQuery = self.preferredHistoryQuery?.lowercased(),
+                   preferredQuery == searchText.lowercased(),
                    let index = finalResults.firstIndex(where: {
                        if case .historyCommand(let cmd) = $0 {
                            return cmd.lowercased() == preferred
