@@ -273,31 +273,24 @@ class MainViewController: NSViewController {
         return nil
     }
 
-    private func recordSuccessfulRun(_ inputs: String...) {
-        recordSuccessfulRun(inputs)
-    }
-
-    private func recordSuccessfulRun(_ inputs: [String]) {
-        guard !inputs.isEmpty else { return }
-        var seen = Set<String>()
-        for raw in inputs {
-            let value = raw.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !value.isEmpty else { continue }
-            let key = value.lowercased()
-            if seen.contains(key) { continue }
-            seen.insert(key)
-            #if DEBUG
-            print("[CommandHistory] Recording '\(value)'")
-            #endif
-            commandHistory.record(value)
+    private func recordSuccessfulRun(command: String, displayName: String? = nil) {
+        let trimmed = command.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        #if DEBUG
+        if let displayName, !displayName.isEmpty {
+            print("[CommandHistory] Recording command='\(trimmed)' display='\(displayName)'")
+        } else {
+            print("[CommandHistory] Recording command='\(trimmed)'")
         }
+        #endif
+        commandHistory.record(command: trimmed, display: displayName)
     }
 
     private func openURLIfPossible(from input: String) -> Bool {
         guard let url = resolvedURL(from: input) else { return false }
         let success = NSWorkspace.shared.open(url)
         if success {
-            recordSuccessfulRun(input)
+            recordSuccessfulRun(command: input)
         }
         searchField.stringValue = ""
         apps = []
@@ -344,7 +337,7 @@ class MainViewController: NSViewController {
                    let preferredQuery = self.preferredHistoryQuery?.lowercased(),
                    preferredQuery == searchText.lowercased(),
                    let index = finalResults.firstIndex(where: {
-                       if case .historyCommand(let cmd) = $0 {
+                       if case .historyCommand(let cmd, _) = $0 {
                            return cmd.lowercased() == preferred
                        }
                        return false
@@ -373,7 +366,7 @@ class MainViewController: NSViewController {
             if case .historyCommand = app {
                 // already handled in executeHistoryCommand
             } else {
-                recordSuccessfulRun(searchField.stringValue)
+                recordSuccessfulRun(command: searchField.stringValue, displayName: app.displayName)
             }
         }
     }
@@ -385,7 +378,7 @@ class MainViewController: NSViewController {
             return launchInstalledApp(bundleId: bundleID, path: path)
         case .availableCask(let cask):
             return installCask(cask)
-        case .historyCommand(let command):
+        case .historyCommand(let command, _):
             return executeHistoryCommand(command)
         @unknown default:
             return false
@@ -476,7 +469,7 @@ class MainViewController: NSViewController {
                     self.tableView.scrollRowToVisible(idx)
                     let target = results[idx]
                     if self.launchApplication(target) {
-                        self.recordSuccessfulRun(trimmed)
+                        self.recordSuccessfulRun(command: trimmed, displayName: target.displayName)
                     }
                 }
             }
@@ -624,12 +617,17 @@ extension MainViewController: NSTableViewDelegate {
                 applySingleLineTitle()
             }
 
-            func configureForHistory(command: String) {
+            func configureForHistory(command: String, display: String?) {
                 isCask = false
                 setButtonsVisible(false)
                 enableMultilineTitle()
-                titleField.stringValue = command
-                titleField.toolTip = command
+                let title = display?.isEmpty == false ? display! : command
+                titleField.stringValue = title
+                if display?.isEmpty == false && display != command {
+                    titleField.toolTip = "Command: \(command)"
+                } else {
+                    titleField.toolTip = command
+                }
                 descField.stringValue = "Recent command"
                 descField.textColor = .tertiaryLabelColor
             }
@@ -733,11 +731,11 @@ extension MainViewController: NSTableViewDelegate {
             cell.installButton.target = self
             cell.installButton.action = #selector(installButtonPressed(_:))
             cell.configureForCask(homepageAvailable: cask.homepage != nil, row: row)
-        case .historyCommand(let command):
+        case .historyCommand(let command, let display):
             cell.titleField.textColor = .labelColor
             cell.descField.isHidden = false
             cell.descField.textColor = .tertiaryLabelColor
-            cell.configureForHistory(command: command)
+            cell.configureForHistory(command: command, display: display)
         @unknown default:
             cell.titleField.stringValue = displayName
             cell.descField.isHidden = true
@@ -798,7 +796,7 @@ extension MainViewController: NSTextFieldDelegate {
                         if case .historyCommand = app {
                             // handled within executeHistoryCommand
                         } else {
-                            recordSuccessfulRun(searchField.stringValue)
+                            recordSuccessfulRun(command: searchField.stringValue, displayName: app.displayName)
                         }
                     }
                 }
@@ -846,7 +844,7 @@ extension MainViewController: TableViewNavigationDelegate {
                 if case .historyCommand = app {
                     // handled within executeHistoryCommand
                 } else {
-                    recordSuccessfulRun(searchField.stringValue)
+                    recordSuccessfulRun(command: searchField.stringValue, displayName: app.displayName)
                 }
             }
         }

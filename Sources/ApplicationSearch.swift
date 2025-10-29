@@ -4,13 +4,13 @@ import Foundation
 enum SearchResult {
     case installedAppMetadata(name: String, path: String?, bundleID: String?, description: String?)
     case availableCask(CaskData.CaskItem)
-    case historyCommand(String)
+    case historyCommand(command: String, display: String?)
 
     var displayName: String {
         switch self {
         case .installedAppMetadata(let name, _, _, _): return name
         case .availableCask(let c): return c.displayName
-        case .historyCommand(let command): return command
+        case .historyCommand(let command, let display): return display ?? command
         }
     }
     var isInstalled: Bool {
@@ -29,7 +29,7 @@ enum SearchResult {
             return displayName.lowercased()
         case .availableCask(let cask):
             return cask.displayName.lowercased()
-        case .historyCommand(let command):
+        case .historyCommand(let command, _):
             return command.lowercased()
         }
     }
@@ -317,14 +317,16 @@ func searchApplications(queryString raw: String,
 
                 let historyBaseScore = 5000
                 var addedHistory = Set<String>()
-                for (command, score) in historyMatches {
+                for match in historyMatches {
+                    let command = match.entry.command
+                    let display = match.entry.display
                     let trimmedCommand = command.trimmingCharacters(in: .whitespacesAndNewlines)
                     guard !trimmedCommand.isEmpty else { continue }
                     let lower = trimmedCommand.lowercased()
                     if existingDisplayNames.contains(lower) { continue }
                     if addedHistory.contains(lower) { continue }
                     addedHistory.insert(lower)
-                    combined.append((.historyCommand(trimmedCommand), historyBaseScore + score))
+                    combined.append((.historyCommand(command: trimmedCommand, display: display), historyBaseScore + match.score))
                 }
 
                 // Sort: history first (highest score), then installed, then others
