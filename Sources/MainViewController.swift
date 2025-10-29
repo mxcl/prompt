@@ -504,7 +504,6 @@ extension MainViewController: NSTableViewDelegate {
             private var descTrailingToButtons: NSLayoutConstraint!
             private var titleTrailingToEdge: NSLayoutConstraint!
             private var descTrailingToEdge: NSLayoutConstraint!
-            private var buttonStackWidthConstraint: NSLayoutConstraint!
             private var buttonVisibilityConstraints: [NSLayoutConstraint] = []
             private var buttonHiddenConstraints: [NSLayoutConstraint] = []
 
@@ -569,7 +568,6 @@ extension MainViewController: NSTableViewDelegate {
                 titleTrailingToEdge = titleField.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -6)
                 descTrailingToEdge = descField.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -6)
                 let buttonStackTrailing = buttonStack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -6)
-                buttonStackWidthConstraint = buttonStack.widthAnchor.constraint(equalToConstant: 0)
 
                 buttonVisibilityConstraints = [
                     titleTrailingToButtons,
@@ -578,8 +576,7 @@ extension MainViewController: NSTableViewDelegate {
 
                 buttonHiddenConstraints = [
                     titleTrailingToEdge,
-                    descTrailingToEdge,
-                    buttonStackWidthConstraint
+                    descTrailingToEdge
                 ]
 
                 NSLayoutConstraint.activate([
