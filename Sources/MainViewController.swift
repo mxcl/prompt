@@ -822,6 +822,11 @@ extension MainViewController: NSTableViewDelegate {
                 cell.descField.stringValue = singleLine
                 cell.descField.isHidden = false
                 cell.descField.textColor = .tertiaryLabelColor
+            } else if let homepage = cask.homepage, !homepage.isEmpty {
+                let singleLine = homepage.replacingOccurrences(of: "\n", with: " ")
+                cell.descField.stringValue = singleLine
+                cell.descField.isHidden = false
+                cell.descField.textColor = .tertiaryLabelColor
             } else {
                 cell.descField.isHidden = true
             }
@@ -851,6 +856,7 @@ extension MainViewController: NSTableViewDelegate {
         switch apps[row] {
         case .availableCask(let cask):
             if let desc = cask.desc, !desc.isEmpty { return 48 }
+            if let homepage = cask.homepage, !homepage.isEmpty { return 48 }
             return 32
         case .installedAppMetadata(_, let path, _, let desc):
             if (path != nil) || (desc != nil && !(desc?.isEmpty ?? true)) { return 40 }
