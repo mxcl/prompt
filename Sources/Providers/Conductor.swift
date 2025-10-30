@@ -119,7 +119,10 @@ final class SearchConductor {
         switch result.result {
         case .installedAppMetadata:
             return 3
-        case .historyCommand:
+        case .historyCommand(let command, _):
+            if command.lowercased() == query.lowercased {
+                return 3
+            }
             return 2
         case .availableCask(let cask):
             if isExactMatch(cask: cask, query: query.lowercased) {
