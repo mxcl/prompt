@@ -119,10 +119,10 @@ final class CommandHistory {
                 return nil
             }
             let gap = candidateLower.distance(from: searchIndex, to: matchIndex)
-            score += max(15 - gap, 1)
+            score += max(8 - gap, 1)
             searchIndex = candidateLower.index(after: matchIndex)
         }
 
-        return 120 + score
+        return 100 + score
     }
 }

@@ -324,7 +324,7 @@ func searchApplications(queryString raw: String,
                     existingDisplayNames.insert(c.token.lowercased())
                 }
 
-                let historyBaseScore = 400
+                let historyBaseScore = 200
                 var addedHistory = Set<String>()
                 for match in historyMatches {
                     let command = match.entry.command
@@ -335,7 +335,9 @@ func searchApplications(queryString raw: String,
                     if existingDisplayNames.contains(lower) { continue }
                     if addedHistory.contains(lower) { continue }
                     addedHistory.insert(lower)
-                    combined.append((.historyCommand(command: trimmedCommand, display: display), historyBaseScore + match.score))
+                    let rawScore = historyBaseScore + match.score
+                    let boundedScore = min(rawScore, 700) // keep history below solid app matches
+                    combined.append((.historyCommand(command: trimmedCommand, display: display), boundedScore))
                 }
 
                 // Sort primarily by score, preferring installed, then history when scores tie
