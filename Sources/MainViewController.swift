@@ -13,6 +13,22 @@ class NavigableTableView: NSTableView {
                 navigationDelegate?.tableViewShouldReturnToSearchField(self)
                 return
             }
+        case 51: // Delete / backspace
+            navigationDelegate?.tableViewShouldReturnToSearchField(self)
+            if let editor = window?.firstResponder as? NSTextView {
+                editor.deleteBackward(nil)
+            } else {
+                NSApp.sendAction(#selector(NSText.deleteBackward(_:)), to: nil, from: self)
+            }
+            return
+        case 117: // Forward delete
+            navigationDelegate?.tableViewShouldReturnToSearchField(self)
+            if let editor = window?.firstResponder as? NSTextView {
+                editor.deleteForward(nil)
+            } else {
+                NSApp.sendAction(#selector(NSText.deleteForward(_:)), to: nil, from: self)
+            }
+            return
         case 36: // Enter/Return key
             if self.selectedRow >= 0 {
                 navigationDelegate?.tableViewShouldLaunchSelectedApp(self)
