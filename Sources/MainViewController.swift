@@ -51,6 +51,10 @@ class NavigableTableView: NSTableView {
     }
 }
 
+class VibrantTextField: NSTextField {
+    override var allowsVibrancy: Bool { true }
+}
+
 protocol TableViewNavigationDelegate: AnyObject {
     func tableViewShouldReturnToSearchField(_ tableView: NSTableView)
     func tableViewShouldLaunchSelectedApp(_ tableView: NSTableView)
@@ -170,7 +174,6 @@ class MainViewController: NSViewController {
     private func setupUI() {
         // Create search field
         searchField = NSTextField(frame: NSRect(x: 0, y: 0, width: 0, height: 0))
-        searchField.placeholderString = "Run"
         searchField.target = self
         searchField.action = #selector(searchFieldChanged(_:))
         searchField.delegate = self
@@ -182,7 +185,20 @@ class MainViewController: NSViewController {
         searchField.wantsLayer = true
         searchField.layer?.cornerRadius = 12
         searchField.layer?.masksToBounds = true
-        searchField.layer?.backgroundColor = NSColor.textBackgroundColor.withAlphaComponent(0.25).cgColor
+        searchField.layer?.backgroundColor = NSColor.white.withAlphaComponent(0.08).cgColor
+        searchField.textColor = NSColor.white
+        searchField.placeholderAttributedString = NSAttributedString(
+            string: "Run",
+            attributes: [
+                .foregroundColor: NSColor.white.withAlphaComponent(0.45)
+            ]
+        )
+        if let cell = searchField.cell as? NSTextFieldCell {
+            cell.usesSingleLineMode = true
+            cell.isScrollable = true
+            cell.wraps = false
+            cell.lineBreakMode = .byTruncatingTail
+        }
 
         // Add continuous text change monitoring
         NotificationCenter.default.addObserver(
@@ -243,8 +259,8 @@ class MainViewController: NSViewController {
 
             // Scroll view constraints - moved up to be against search field
             scrollView.topAnchor.constraint(equalTo: searchField.bottomAnchor, constant: 16),
-            scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
+            scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
             scrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -24)
         ])
     }
@@ -607,8 +623,8 @@ extension MainViewController: NSTableViewDelegate {
 
         // Custom composite cell containing primary + optional secondary label
         class AppCellView: NSTableCellView {
-            let titleField = NSTextField()
-            let descField = NSTextField()
+            let titleField = VibrantTextField()
+            let descField = VibrantTextField()
             let homepageButton = NSButton(title: "Homepage", target: nil, action: nil)
             let installButton = NSButton(title: "Install", target: nil, action: nil)
             let buttonStack = NSStackView()
@@ -642,10 +658,11 @@ extension MainViewController: NSTableViewDelegate {
                     addSubview(tf)
                 }
                 titleField.font = NSFont.systemFont(ofSize: NSFont.systemFontSize)
+                titleField.textColor = NSColor.white.withAlphaComponent(0.92)
                 titleField.maximumNumberOfLines = 1
                 titleField.usesSingleLineMode = true
-                descField.font = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize)
-                descField.textColor = NSColor.tertiaryLabelColor
+                descField.font = NSFont.systemFont(ofSize: 13)
+                descField.textColor = NSColor.white.withAlphaComponent(0.6)
 
                 textField = titleField
                 // Configure subtle buttons stack (less imposing)
@@ -755,7 +772,7 @@ extension MainViewController: NSTableViewDelegate {
                     titleField.toolTip = command
                 }
                 descField.stringValue = "Recent command"
-                descField.textColor = .tertiaryLabelColor
+                descField.textColor = NSColor.white.withAlphaComponent(0.55)
             }
 
             private func setButtonsVisible(_ visible: Bool) {
@@ -814,7 +831,7 @@ extension MainViewController: NSTableViewDelegate {
         switch app {
         case .installedAppMetadata(_, let path, _, let desc):
             cell.titleField.stringValue = displayName
-            cell.titleField.textColor = .labelColor
+            cell.titleField.textColor = NSColor.white
             var secondary: String? = nil
             if let p = path {
                 secondary = p
@@ -830,7 +847,7 @@ extension MainViewController: NSTableViewDelegate {
             }
             if let sec = secondary, !sec.isEmpty {
                 cell.descField.stringValue = sec
-                cell.descField.textColor = .tertiaryLabelColor
+                cell.descField.textColor = NSColor.white.withAlphaComponent(0.55)
                 cell.descField.isHidden = false
             } else {
                 cell.descField.isHidden = true
@@ -838,17 +855,17 @@ extension MainViewController: NSTableViewDelegate {
             cell.configureForInstalled()
         case .availableCask(let cask):
             cell.titleField.stringValue = displayName + " (install)"
-            cell.titleField.textColor = .secondaryLabelColor
+            cell.titleField.textColor = NSColor.systemGreen.withAlphaComponent(0.85)
             if let desc = cask.desc, !desc.isEmpty {
                 let singleLine = desc.replacingOccurrences(of: "\n", with: " ")
                 cell.descField.stringValue = singleLine
                 cell.descField.isHidden = false
-                cell.descField.textColor = .tertiaryLabelColor
+                cell.descField.textColor = NSColor.white.withAlphaComponent(0.55)
             } else if let homepage = cask.homepage, !homepage.isEmpty {
                 let singleLine = homepage.replacingOccurrences(of: "\n", with: " ")
                 cell.descField.stringValue = singleLine
                 cell.descField.isHidden = false
-                cell.descField.textColor = .tertiaryLabelColor
+                cell.descField.textColor = NSColor.white.withAlphaComponent(0.55)
             } else {
                 cell.descField.isHidden = true
             }
@@ -859,9 +876,9 @@ extension MainViewController: NSTableViewDelegate {
             cell.installButton.action = #selector(installButtonPressed(_:))
             cell.configureForCask(homepageAvailable: cask.homepage != nil, row: row)
         case .historyCommand(let command, let display):
-            cell.titleField.textColor = .labelColor
+            cell.titleField.textColor = NSColor.white
             cell.descField.isHidden = false
-            cell.descField.textColor = .tertiaryLabelColor
+            cell.descField.textColor = NSColor.white.withAlphaComponent(0.55)
             cell.configureForHistory(command: command, display: display)
         @unknown default:
             cell.titleField.stringValue = displayName
