@@ -12,7 +12,10 @@ final class CommandHistoryProvider: SearchProvider {
             return
         }
 
-        let matches = history.prefixMatches(for: query.trimmed, limit: limit)
+        var matches = history.prefixMatches(for: query.trimmed, limit: limit)
+        if matches.isEmpty {
+            matches = history.recentEntries(limit: limit)
+        }
         let loweredQuery = query.lowercased
         var added = Set<String>()
         var results: [ProviderResult] = []
