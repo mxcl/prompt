@@ -1,0 +1,5 @@
+#!/bin/sh
+
+set -euxo pipefail
+
+rm "$HOME/Library/Preferences/xyz.tea.BASEv2.plist"

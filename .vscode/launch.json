@@ -3,12 +3,11 @@
     "configurations": [
         {
             "name": "Run teaBASE (Debug)",
-            "type": "lldb",
+            "type": "node-terminal",
             "request": "launch",
             "preLaunchTask": "teaBASE: build",
-            "program": "${workspaceFolder}/DerivedData/Build/Products/Debug/teaBASEv2.app/Contents/MacOS/teaBASEv2",
+            "command": "${workspaceFolder}/DerivedData/Build/Products/Debug/teaBASEv2.app/Contents/MacOS/teaBASEv2",
             "cwd": "${workspaceFolder}",
-            "stopOnEntry": false,
             "internalConsoleOptions": "neverOpen"
         }
     ]
