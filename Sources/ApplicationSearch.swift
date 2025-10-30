@@ -140,14 +140,32 @@ private func isEditDistanceLeOne(_ a: String, _ b: String) -> Bool {
     return diffs <= 1
 }
 
+private func normalizedPathForSystemCheck(_ lower: String) -> String {
+    let dataPrefix = "/system/volumes/data"
+    if lower.hasPrefix(dataPrefix) {
+        var remainder = lower.dropFirst(dataPrefix.count)
+        if remainder.isEmpty { return "/" }
+        if remainder.first != "/" { return "/" + String(remainder) }
+        return String(remainder)
+    }
+    return lower
+}
+
 private func isSystemOrEmbedded(path: String) -> Bool {
     let lower = path.lowercased()
-    if lower.hasPrefix("/system/") || lower.hasPrefix("/library/") { return true }
+    let normalized = normalizedPathForSystemCheck(lower)
+
+    if normalized.hasPrefix("/system/applications/") { return true }
+    if normalized.hasPrefix("/system/library/") { return true }
+    if normalized.hasPrefix("/system/") && !normalized.hasPrefix("/system/volumes/") { return true }
+    if normalized.hasPrefix("/library/") { return true }
+
     // User Library (~/Library)
-    let homeLibPrefixLower = (NSHomeDirectory() + "/Library/").lowercased()
-    if lower.hasPrefix(homeLibPrefixLower) { return true }
+    let homeLibPrefixLower = normalizedPathForSystemCheck((NSHomeDirectory() + "/Library/").lowercased())
+    if normalized.hasPrefix(homeLibPrefixLower) { return true }
+
     // Embedded .app detection
-    let comps = lower.split(separator: "/")
+    let comps = normalized.split(separator: "/")
     if comps.count > 1 {
         for idx in 0..<(comps.count - 1) {
             if comps[idx].hasSuffix(".app") { return true }
