@@ -42,6 +42,7 @@ class MainViewController: NSViewController {
     private var preferredHistoryCommand: String?
     private var suppressNextManualUpdate = false
     private var preferredHistoryQuery: String?
+    private let isAutocompleteEnabled = false // Temporary toggle while debugging autocomplete behavior
 
     // MARK: - Button Actions
     @objc private func homepageButtonPressed(_ sender: NSButton) {
@@ -223,7 +224,7 @@ class MainViewController: NSViewController {
         }
         suppressNextManualUpdate = false
 
-        var skipAutocomplete = false
+        var skipAutocomplete = !isAutocompleteEnabled
         if isKeyDown, let event = currentEvent {
             if autocompleteSkipKeyCodes.contains(event.keyCode) {
                 skipAutocomplete = true
