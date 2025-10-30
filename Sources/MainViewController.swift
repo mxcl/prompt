@@ -70,6 +70,7 @@ class MainViewController: NSViewController {
         super.viewDidLoad()
         view.wantsLayer = true
         setupNotifications()
+        performSearch("")
     }
 
     override func viewDidAppear() {
@@ -296,6 +297,7 @@ class MainViewController: NSViewController {
         apps = []
         tableView.reloadData()
         focusAndSelectSearchField()
+        performSearch("")
     }
 
     private func openURLIfPossible(from input: String) -> Bool {
