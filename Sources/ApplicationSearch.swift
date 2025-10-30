@@ -63,6 +63,15 @@ func calculateRelevanceScore(name: String, query: String) -> Int {
         return 900
     }
 
+    // Word-level check so matches like “Visual Studio Code” score well for “code”
+    let tokens = name.components(separatedBy: CharacterSet.alphanumerics.inverted).filter { !$0.isEmpty }
+    if tokens.contains(query) {
+        return 950
+    }
+    if tokens.contains(where: { $0.hasPrefix(query) }) {
+        return 880
+    }
+
     // Only do more expensive contains check if needed
     if name.contains(query) {
         return 800
@@ -315,7 +324,7 @@ func searchApplications(queryString raw: String,
                     existingDisplayNames.insert(c.token.lowercased())
                 }
 
-                let historyBaseScore = 5000
+                let historyBaseScore = 400
                 var addedHistory = Set<String>()
                 for match in historyMatches {
                     let command = match.entry.command
@@ -329,16 +338,18 @@ func searchApplications(queryString raw: String,
                     combined.append((.historyCommand(command: trimmedCommand, display: display), historyBaseScore + match.score))
                 }
 
-                // Sort: history first (highest score), then installed, then others
+                // Sort primarily by score, preferring installed, then history when scores tie
                 let sorted = combined.sorted {
+                    if $0.1 != $1.1 { return $0.1 > $1.1 }
+
+                    let aInstalled = $0.0.isInstalled
+                    let bInstalled = $1.0.isInstalled
+                    if aInstalled != bInstalled { return aInstalled && !bInstalled }
+
                     let aHistory = $0.0.isHistory
                     let bHistory = $1.0.isHistory
                     if aHistory != bHistory { return aHistory && !bHistory }
 
-                    let ai = $0.0.isInstalled
-                    let bi = $1.0.isInstalled
-                    if ai != bi { return ai && !bi }
-                    if $0.1 != $1.1 { return $0.1 > $1.1 }
                     return $0.0.displayName.localizedCaseInsensitiveCompare($1.0.displayName) == .orderedAscending
                 }
 
