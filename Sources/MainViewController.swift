@@ -65,6 +65,7 @@ class MainViewController: NSViewController {
     private var searchField: NSTextField!
     private var tableView: NavigableTableView!
     private var scrollView: NSScrollView!
+    private var searchContainer: NSView!
     private var apps: [SearchResult] = []
     private let commandHistory = CommandHistory.shared
     private var isApplyingAutocomplete = false
@@ -74,12 +75,6 @@ class MainViewController: NSViewController {
     private var suppressNextManualUpdate = false
     private var preferredHistoryQuery: String?
     private let isAutocompleteEnabled = false // Temporary toggle while debugging autocomplete behavior
-
-    private func configureFieldEditorInsets() {
-        guard let editor = view.window?.fieldEditor(true, for: searchField) as? NSTextView else { return }
-        editor.textContainerInset = NSSize(width: 18, height: 10)
-        editor.textContainer?.lineFragmentPadding = 0
-    }
 
     // MARK: - Button Actions
     @objc private func homepageButtonPressed(_ sender: NSButton) {
@@ -154,7 +149,6 @@ class MainViewController: NSViewController {
             guard let self = self else { return }
             self.view.window?.makeFirstResponder(self.searchField)
             self.searchField.selectText(nil)
-            self.configureFieldEditorInsets()
         }
     }
 
@@ -179,6 +173,13 @@ class MainViewController: NSViewController {
     }
 
     private func setupUI() {
+        // Container for search field to maintain consistent insets regardless of focus state
+        searchContainer = NSView(frame: .zero)
+        searchContainer.translatesAutoresizingMaskIntoConstraints = false
+        searchContainer.wantsLayer = true
+        searchContainer.layer?.backgroundColor = NSColor.clear.cgColor
+        view.addSubview(searchContainer)
+
         // Create search field
         searchField = NSTextField(frame: NSRect(x: 0, y: 0, width: 0, height: 0))
         searchField.target = self
@@ -192,17 +193,15 @@ class MainViewController: NSViewController {
         searchField.isEditable = true
         searchField.isSelectable = true
         searchField.textColor = NSColor.white
-        let placeholderParagraph = NSMutableParagraphStyle()
-        placeholderParagraph.alignment = .left
-        placeholderParagraph.firstLineHeadIndent = 18
         searchField.placeholderAttributedString = NSAttributedString(
             string: "Run",
             attributes: [
                 .foregroundColor: NSColor.white.withAlphaComponent(0.55),
-                .font: NSFont.systemFont(ofSize: 24, weight: .semibold),
-                .paragraphStyle: placeholderParagraph
+                .font: NSFont.systemFont(ofSize: 24, weight: .semibold)
             ]
         )
+        searchField.translatesAutoresizingMaskIntoConstraints = false
+        searchContainer.addSubview(searchField)
 
         // Add continuous text change monitoring
         NotificationCenter.default.addObserver(
@@ -211,8 +210,6 @@ class MainViewController: NSViewController {
             name: NSControl.textDidChangeNotification,
             object: searchField
         )
-
-        view.addSubview(searchField)
 
         // Create table view
         tableView = NavigableTableView()
@@ -251,18 +248,24 @@ class MainViewController: NSViewController {
     }
 
     private func setupConstraints() {
+        searchContainer.translatesAutoresizingMaskIntoConstraints = false
         searchField.translatesAutoresizingMaskIntoConstraints = false
         scrollView.translatesAutoresizingMaskIntoConstraints = false
 
         NSLayoutConstraint.activate([
-            // Search field constraints
-            searchField.topAnchor.constraint(equalTo: view.topAnchor, constant: 12),
-            searchField.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 12),
-            searchField.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -12),
-            searchField.heightAnchor.constraint(equalToConstant: 44),
+            // Search field container constraints
+            searchContainer.topAnchor.constraint(equalTo: view.topAnchor, constant: 12),
+            searchContainer.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 12),
+            searchContainer.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -12),
+            searchContainer.heightAnchor.constraint(equalToConstant: 44),
+
+            searchField.leadingAnchor.constraint(equalTo: searchContainer.leadingAnchor, constant: 18),
+            searchField.trailingAnchor.constraint(equalTo: searchContainer.trailingAnchor, constant: -18),
+            searchField.centerYAnchor.constraint(equalTo: searchContainer.centerYAnchor),
+            searchField.heightAnchor.constraint(equalToConstant: 26),
 
             // Scroll view constraints - moved up to be against search field
-            scrollView.topAnchor.constraint(equalTo: searchField.bottomAnchor, constant: 12),
+            scrollView.topAnchor.constraint(equalTo: searchContainer.bottomAnchor, constant: 12),
             scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 8),
             scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -8),
             scrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -12)
@@ -282,10 +285,6 @@ class MainViewController: NSViewController {
         let currentEvent = NSApp.currentEvent
         let isKeyDown = currentEvent?.type == .keyDown
         let fieldEditor = view.window?.fieldEditor(true, for: textField) as? NSTextView
-        if let editor = fieldEditor {
-            editor.textContainerInset = NSSize(width: 18, height: 10)
-            editor.textContainer?.lineFragmentPadding = 0
-        }
         let typedText = fieldEditor?.string ?? textField.stringValue
 
         if isApplyingAutocomplete {
@@ -901,7 +900,7 @@ extension MainViewController: NSTableViewDelegate {
     func tableView(_ tableView: NSTableView, heightOfRow row: Int) -> CGFloat {
         guard row < apps.count else { return 24 }
 
-        let subtitleHeight: CGFloat = 56
+        let subtitleHeight: CGFloat = 44
         let titleOnlyHeight: CGFloat = 40
 
         switch apps[row] {
