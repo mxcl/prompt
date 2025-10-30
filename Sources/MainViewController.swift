@@ -55,6 +55,36 @@ class VibrantTextField: NSTextField {
     override var allowsVibrancy: Bool { true }
 }
 
+class InsetTextFieldCell: NSTextFieldCell {
+    var contentInsets = NSEdgeInsets(top: 0, left: 0, bottom: 0, right: 0)
+
+    private func inset(_ rect: NSRect) -> NSRect {
+        return NSRect(
+            x: rect.origin.x + contentInsets.left,
+            y: rect.origin.y + contentInsets.bottom,
+            width: rect.size.width - contentInsets.left - contentInsets.right,
+            height: rect.size.height - contentInsets.top - contentInsets.bottom
+        )
+    }
+
+    override func drawingRect(forBounds rect: NSRect) -> NSRect {
+        let insetRect = inset(rect)
+        return super.drawingRect(forBounds: insetRect)
+    }
+
+    override func edit(withFrame rect: NSRect, in controlView: NSView, editor textObj: NSText, delegate: Any?, event: NSEvent?) {
+        super.edit(withFrame: inset(rect), in: controlView, editor: textObj, delegate: delegate, event: event)
+    }
+
+    override func select(withFrame rect: NSRect, in controlView: NSView, editor textObj: NSText, delegate: Any?, start selStart: Int, length selLength: Int) {
+        super.select(withFrame: inset(rect), in: controlView, editor: textObj, delegate: delegate, start: selStart, length: selLength)
+    }
+
+    override func drawInterior(withFrame frame: NSRect, in view: NSView) {
+        super.drawInterior(withFrame: inset(frame), in: view)
+    }
+}
+
 protocol TableViewNavigationDelegate: AnyObject {
     func tableViewShouldReturnToSearchField(_ tableView: NSTableView)
     func tableViewShouldLaunchSelectedApp(_ tableView: NSTableView)
@@ -172,8 +202,16 @@ class MainViewController: NSViewController {
     }
 
     private func setupUI() {
-        // Create search field
+        // Create search field with custom insets to mimic Raycast styling
+        let insetCell = InsetTextFieldCell(textCell: "")
+        insetCell.contentInsets = NSEdgeInsets(top: 10, left: 18, bottom: 10, right: 18)
+        insetCell.usesSingleLineMode = true
+        insetCell.wraps = false
+        insetCell.isScrollable = true
+        insetCell.lineBreakMode = .byTruncatingTail
+
         searchField = NSTextField(frame: NSRect(x: 0, y: 0, width: 0, height: 0))
+        searchField.cell = insetCell
         searchField.target = self
         searchField.action = #selector(searchFieldChanged(_:))
         searchField.delegate = self
@@ -181,24 +219,15 @@ class MainViewController: NSViewController {
         searchField.isBezeled = false
         searchField.focusRingType = .none
         searchField.drawsBackground = false
-        searchField.font = NSFont.systemFont(ofSize: 20, weight: .medium)
-        searchField.wantsLayer = true
-        searchField.layer?.cornerRadius = 12
-        searchField.layer?.masksToBounds = true
-        searchField.layer?.backgroundColor = NSColor.white.withAlphaComponent(0.08).cgColor
+        searchField.font = NSFont.systemFont(ofSize: 24, weight: .semibold)
         searchField.textColor = NSColor.white
         searchField.placeholderAttributedString = NSAttributedString(
             string: "Run",
             attributes: [
-                .foregroundColor: NSColor.white.withAlphaComponent(0.45)
+                .foregroundColor: NSColor.white.withAlphaComponent(0.55),
+                .font: NSFont.systemFont(ofSize: 24, weight: .semibold)
             ]
         )
-        if let cell = searchField.cell as? NSTextFieldCell {
-            cell.usesSingleLineMode = true
-            cell.isScrollable = true
-            cell.wraps = false
-            cell.lineBreakMode = .byTruncatingTail
-        }
 
         // Add continuous text change monitoring
         NotificationCenter.default.addObserver(
@@ -239,7 +268,7 @@ class MainViewController: NSViewController {
         scrollView.autohidesScrollers = true
         scrollView.drawsBackground = false
         scrollView.borderType = .noBorder
-        scrollView.contentInsets = NSEdgeInsets(top: 8, left: 0, bottom: 16, right: 0)
+        scrollView.contentInsets = NSEdgeInsets(top: 4, left: 0, bottom: 12, right: 0)
         view.addSubview(scrollView)
 
         // Setup Auto Layout
@@ -252,16 +281,16 @@ class MainViewController: NSViewController {
 
         NSLayoutConstraint.activate([
             // Search field constraints
-            searchField.topAnchor.constraint(equalTo: view.topAnchor, constant: 24),
-            searchField.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
-            searchField.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
+            searchField.topAnchor.constraint(equalTo: view.topAnchor, constant: 12),
+            searchField.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 12),
+            searchField.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -12),
             searchField.heightAnchor.constraint(equalToConstant: 44),
 
             // Scroll view constraints - moved up to be against search field
-            scrollView.topAnchor.constraint(equalTo: searchField.bottomAnchor, constant: 16),
-            scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
-            scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
-            scrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -24)
+            scrollView.topAnchor.constraint(equalTo: searchField.bottomAnchor, constant: 12),
+            scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 8),
+            scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -8),
+            scrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -12)
         ])
     }
 
