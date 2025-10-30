@@ -329,7 +329,7 @@ class MainViewController: NSViewController {
             return
         }
 
-        searchApplications(queryString: searchText) { [weak self] results in
+        SearchConductor.shared.search(query: searchText) { [weak self] results in
             DispatchQueue.main.async {
                 guard let self = self else { return }
                 var finalResults = results
@@ -472,7 +472,7 @@ class MainViewController: NSViewController {
 
         searchField.stringValue = trimmed
 
-        searchApplications(queryString: trimmed) { [weak self] results in
+        SearchConductor.shared.search(query: trimmed) { [weak self] results in
             guard let self = self else { return }
 
             DispatchQueue.main.async {

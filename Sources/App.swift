@@ -9,7 +9,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         setupApplication()
         setupGlobalShortcut()
         // Initialize cask data loading
-        _ = CaskProvider.shared.searchCasks(query: "").count
+        _ = CaskStore.shared.casks.count
     }
 
     private func setupApplication() {
