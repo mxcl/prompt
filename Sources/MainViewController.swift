@@ -14,6 +14,11 @@ class NavigableTableView: NSTableView {
                 return
             }
         case 51: // Delete / backspace
+            let row = self.selectedRow
+            if row >= 0,
+               navigationDelegate?.tableView(self, shouldDeleteRow: row) == true {
+                return
+            }
             navigationDelegate?.tableViewShouldReturnToSearchField(self)
             if let editor = window?.firstResponder as? NSTextView {
                 editor.deleteBackward(nil)
@@ -22,6 +27,11 @@ class NavigableTableView: NSTableView {
             }
             return
         case 117: // Forward delete
+            let row = self.selectedRow
+            if row >= 0,
+               navigationDelegate?.tableView(self, shouldDeleteRow: row) == true {
+                return
+            }
             navigationDelegate?.tableViewShouldReturnToSearchField(self)
             if let editor = window?.firstResponder as? NSTextView {
                 editor.deleteForward(nil)
@@ -44,6 +54,7 @@ class NavigableTableView: NSTableView {
 protocol TableViewNavigationDelegate: AnyObject {
     func tableViewShouldReturnToSearchField(_ tableView: NSTableView)
     func tableViewShouldLaunchSelectedApp(_ tableView: NSTableView)
+    func tableView(_ tableView: NSTableView, shouldDeleteRow row: Int) -> Bool
 }
 
 class MainViewController: NSViewController {
@@ -917,6 +928,30 @@ extension MainViewController: NSTextFieldDelegate {
 
 // MARK: - TableViewNavigationDelegate
 extension MainViewController: TableViewNavigationDelegate {
+    func tableView(_ tableView: NSTableView, shouldDeleteRow row: Int) -> Bool {
+        guard row >= 0 && row < apps.count else { return false }
+        guard case .historyCommand(let command, _) = apps[row] else { return false }
+
+        let removed = commandHistory.remove(command: command)
+        guard removed else { return false }
+
+        apps.remove(at: row)
+        tableView.removeRows(at: IndexSet(integer: row), withAnimation: .effectFade)
+
+        if apps.isEmpty {
+            tableView.deselectAll(nil)
+            focusAndSelectSearchField()
+        } else {
+            let nextIndex = min(row, apps.count - 1)
+            tableView.selectRowIndexes(IndexSet(integer: nextIndex), byExtendingSelection: false)
+            tableView.scrollRowToVisible(nextIndex)
+        }
+
+        // Re-run search to ensure fresh results from providers.
+        performSearch(searchField.stringValue)
+        return true
+    }
+
     func tableViewShouldReturnToSearchField(_ tableView: NSTableView) {
         view.window?.makeFirstResponder(searchField)
         // Position cursor at end of text

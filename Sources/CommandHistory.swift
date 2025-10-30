@@ -118,6 +118,21 @@ final class CommandHistory {
         return Array(scored.prefix(limit)).map { CommandHistoryMatch(entry: $0.entry, score: $0.score) }
     }
 
+    /// Removes a stored command from history.
+    @discardableResult
+    func remove(command: String) -> Bool {
+        let trimmed = command.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return false }
+        guard let index = entries.firstIndex(where: {
+            $0.command.caseInsensitiveCompare(trimmed) == .orderedSame
+        }) else {
+            return false
+        }
+        entries.remove(at: index)
+        persist()
+        return true
+    }
+
     private func persist() {
         if let data = try? JSONEncoder().encode(entries) {
             defaults.set(data, forKey: storageKey)
