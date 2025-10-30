@@ -2,4 +2,5 @@
 
 set -euxo pipefail
 
+defaults delete xyz.tea.BASEv2
 rm "$HOME/Library/Preferences/xyz.tea.BASEv2.plist"
