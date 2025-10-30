@@ -12,22 +12,25 @@ final class CommandHistoryProvider: SearchProvider {
             return
         }
 
-        let matches = history.fuzzyMatches(for: query.trimmed, limit: limit)
+        let matches = history.prefixMatches(for: query.trimmed, limit: limit)
+        let loweredQuery = query.lowercased
         var added = Set<String>()
         var results: [ProviderResult] = []
         results.reserveCapacity(matches.count)
 
-        for match in matches {
-            let command = match.entry.command.trimmingCharacters(in: .whitespacesAndNewlines)
+        for (index, entry) in matches.enumerated() {
+            let command = entry.command.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !command.isEmpty else { continue }
             let lower = command.lowercased()
             if added.contains(lower) { continue }
             added.insert(lower)
 
-            let rawScore = baseScore + match.score
-            let bounded = min(rawScore, 700)
-            let result = SearchResult.historyCommand(command: command, display: match.entry.display)
-            results.append(ProviderResult(source: .commandHistory, result: result, score: bounded))
+            var score = baseScore + max(0, (limit - index) * 10)
+            if lower == loweredQuery {
+                score = 700
+            }
+            let result = SearchResult.historyCommand(command: command, display: entry.display)
+            results.append(ProviderResult(source: .commandHistory, result: result, score: score))
         }
 
         completion(results)

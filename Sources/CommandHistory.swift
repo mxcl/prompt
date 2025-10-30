@@ -79,6 +79,21 @@ final class CommandHistory {
         return matches
     }
 
+    /// Returns stored entries matching the prefix, preserving recency.
+    func prefixMatches(for prefix: String, limit: Int = 10) -> [CommandHistoryEntry] {
+        let trimmed = prefix.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return [] }
+        let lower = trimmed.lowercased()
+        var matches: [CommandHistoryEntry] = []
+        for entry in entries {
+            if entry.command.lowercased().hasPrefix(lower) {
+                matches.append(entry)
+            }
+            if matches.count == limit { break }
+        }
+        return matches
+    }
+
     /// Returns fuzzy matches scored so higher scores indicate better fit.
     func fuzzyMatches(for query: String, limit: Int = 5) -> [CommandHistoryMatch] {
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
