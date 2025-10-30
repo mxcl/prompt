@@ -1,0 +1,79 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+
+SCHEME="${SCHEME:-teaBASEv2}"
+CONFIGURATION="${CONFIGURATION:-Release}"
+APP_BUNDLE_NAME="${APP_BUNDLE_NAME:-teaBASEv2.app}"
+DERIVED_DATA_PATH="${DERIVED_DATA_PATH:-${PROJECT_ROOT}/DerivedData}"
+
+destination_arg="${1:-/Applications}"
+
+expand_path() {
+  local path="$1"
+  if [[ "${path}" == "~" ]]; then
+    printf '%s\n' "${HOME}"
+  elif [[ "${path}" == ~/* ]]; then
+    printf '%s/%s\n' "${HOME}" "${path#~/}"
+  elif [[ "${path}" == /* ]]; then
+    printf '%s\n' "${path}"
+  else
+    printf '%s/%s\n' "${PWD}" "${path}"
+  fi
+}
+
+if [[ "${destination_arg}" == *.app ]]; then
+  INSTALL_PATH_RAW="${destination_arg}"
+  DESTINATION_DIR_RAW="$(dirname "${destination_arg}")"
+else
+  DESTINATION_DIR_RAW="${destination_arg%/}"
+  INSTALL_PATH_RAW="${DESTINATION_DIR_RAW}/${APP_BUNDLE_NAME}"
+fi
+
+DESTINATION_DIR="$(expand_path "${DESTINATION_DIR_RAW}")"
+INSTALL_PATH="$(expand_path "${INSTALL_PATH_RAW}")"
+
+BUILD_PRODUCT_PATH="${DERIVED_DATA_PATH}/Build/Products/${CONFIGURATION}/${APP_BUNDLE_NAME}"
+
+run_with_optional_sudo() {
+  if "$@"; then
+    return 0
+  fi
+  if command -v sudo >/dev/null 2>&1; then
+    echo "Retrying with sudo: $*" >&2
+    sudo "$@"
+    return 0
+  fi
+  return 1
+}
+
+echo "Building ${SCHEME} (${CONFIGURATION}) into ${DERIVED_DATA_PATH}…"
+xcodebuild \
+  -project "${PROJECT_ROOT}/teaBASEv2.xcodeproj" \
+  -scheme "${SCHEME}" \
+  -configuration "${CONFIGURATION}" \
+  -derivedDataPath "${DERIVED_DATA_PATH}" \
+  -destination 'platform=macOS' \
+  CODE_SIGNING_ALLOWED=YES \
+  COMPILER_INDEX_STORE_ENABLE=NO \
+  build
+
+if [[ ! -d "${BUILD_PRODUCT_PATH}" ]]; then
+  echo "Unable to find built application at ${BUILD_PRODUCT_PATH}" >&2
+  exit 1
+fi
+
+echo "Preparing destination ${DESTINATION_DIR}…"
+run_with_optional_sudo mkdir -p "${DESTINATION_DIR}"
+
+if [[ -e "${INSTALL_PATH}" ]]; then
+  echo "Removing existing installation at ${INSTALL_PATH}…"
+  run_with_optional_sudo rm -rf "${INSTALL_PATH}"
+fi
+
+echo "Installing ${APP_BUNDLE_NAME} to ${INSTALL_PATH}…"
+run_with_optional_sudo ditto "${BUILD_PRODUCT_PATH}" "${INSTALL_PATH}"
+
+echo "Installation complete."
