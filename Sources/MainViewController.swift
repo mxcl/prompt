@@ -900,18 +900,22 @@ extension MainViewController: NSTableViewDelegate {
     // Dynamic row height to accommodate description for uninstalled apps
     func tableView(_ tableView: NSTableView, heightOfRow row: Int) -> CGFloat {
         guard row < apps.count else { return 24 }
+
+        let subtitleHeight: CGFloat = 56
+        let titleOnlyHeight: CGFloat = 40
+
         switch apps[row] {
         case .availableCask(let cask):
-            if let desc = cask.desc, !desc.isEmpty { return 48 }
-            if let homepage = cask.homepage, !homepage.isEmpty { return 48 }
-            return 32
+            if let desc = cask.desc, !desc.isEmpty { return subtitleHeight }
+            if let homepage = cask.homepage, !homepage.isEmpty { return subtitleHeight }
+            return titleOnlyHeight
         case .installedAppMetadata(_, let path, _, let desc):
-            if (path != nil) || (desc != nil && !(desc?.isEmpty ?? true)) { return 40 }
-            return 24
+            if (path != nil) || (desc != nil && !(desc?.isEmpty ?? true)) { return subtitleHeight }
+            return titleOnlyHeight
         case .historyCommand:
-            return 48
+            return subtitleHeight
         @unknown default:
-            return 32
+            return titleOnlyHeight
         }
     }
 }
