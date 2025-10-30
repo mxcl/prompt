@@ -79,6 +79,13 @@ final class CommandHistory {
         return matches
     }
 
+    /// Returns the most recent entries regardless of query, limited by the provided count.
+    func recentEntries(limit: Int) -> [CommandHistoryEntry] {
+        guard limit > 0 else { return [] }
+        if entries.count <= limit { return entries }
+        return Array(entries.prefix(limit))
+    }
+
     /// Returns stored entries matching the prefix, preserving recency.
     func prefixMatches(for prefix: String, limit: Int = 10) -> [CommandHistoryEntry] {
         let trimmed = prefix.trimmingCharacters(in: .whitespacesAndNewlines)

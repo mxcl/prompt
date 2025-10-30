@@ -333,12 +333,6 @@ class MainViewController: NSViewController {
     }
 
     private func performSearch(_ searchText: String) {
-        guard !searchText.isEmpty else {
-            apps = []
-            tableView.reloadData()
-            return
-        }
-
         SearchConductor.shared.search(query: searchText) { [weak self] results in
             DispatchQueue.main.async {
                 guard let self = self else { return }

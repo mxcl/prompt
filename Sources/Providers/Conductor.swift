@@ -7,6 +7,7 @@ final class SearchConductor {
     private let aggregationQueue = DispatchQueue(label: "search.conductor.aggregate", qos: .userInitiated)
     private var searchGeneration: UInt64 = 0
     private let generationLock = NSLock()
+    private let emptyQueryHistoryLimit = 8
 
     private init(providers: [SearchProvider] = [
         InstalledApplicationsProvider(),
@@ -19,7 +20,12 @@ final class SearchConductor {
     func search(query raw: String, completion: @escaping ([SearchResult]) -> Void) {
         let query = SearchQuery(raw: raw)
         if query.isEmpty {
-            completion([])
+            let recents = CommandHistory.shared
+                .recentEntries(limit: emptyQueryHistoryLimit)
+                .map { entry in
+                    SearchResult.historyCommand(command: entry.command, display: entry.display)
+                }
+            completion(recents)
             return
         }
 
