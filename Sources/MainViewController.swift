@@ -379,8 +379,8 @@ class MainViewController: NSViewController {
             return launchInstalledApp(bundleId: bundleID, path: path)
         case .availableCask(let cask):
             return installCask(cask)
-        case .historyCommand(let command, _):
-            return executeHistoryCommand(command)
+        case .historyCommand(let command, let display):
+            return executeHistoryCommand(command, display: display)
         @unknown default:
             return false
         }
@@ -463,7 +463,7 @@ class MainViewController: NSViewController {
         return false
     }
 
-    private func executeHistoryCommand(_ command: String) -> Bool {
+    private func executeHistoryCommand(_ command: String, display: String?) -> Bool {
         let trimmed = command.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return false }
 
@@ -472,6 +472,7 @@ class MainViewController: NSViewController {
         }
 
         searchField.stringValue = trimmed
+        lastManualQuery = trimmed
 
         SearchConductor.shared.search(query: trimmed) { [weak self] results in
             guard let self = self else { return }
@@ -480,16 +481,53 @@ class MainViewController: NSViewController {
                 self.apps = results
                 self.tableView.reloadData()
 
-                if let idx = results.firstIndex(where: {
-                    if case .historyCommand = $0 { return false }
-                    return true
-                }) {
-                    self.tableView.selectRowIndexes(IndexSet(integer: idx), byExtendingSelection: false)
-                    self.tableView.scrollRowToVisible(idx)
-                    let target = results[idx]
-                    if self.launchApplication(target) {
-                        self.recordSuccessfulRun(command: trimmed, displayName: target.displayName)
+                if let historyIndex = results.firstIndex(where: {
+                    if case .historyCommand(let storedCommand, _) = $0 {
+                        return storedCommand.caseInsensitiveCompare(trimmed) == .orderedSame
                     }
+                    return false
+                }) {
+                    self.tableView.selectRowIndexes(IndexSet(integer: historyIndex), byExtendingSelection: false)
+                    self.tableView.scrollRowToVisible(historyIndex)
+                }
+
+                func findTarget(for results: [SearchResult]) -> SearchResult? {
+                    if let display = display?.trimmingCharacters(in: .whitespacesAndNewlines),
+                       !display.isEmpty {
+                        let loweredDisplay = display.lowercased()
+                        if let match = results.first(where: {
+                            !$0.isHistory && $0.displayName.lowercased() == loweredDisplay
+                        }) {
+                            return match
+                        }
+                    }
+
+                    let loweredCommand = trimmed.lowercased()
+                    if let commandMatch = results.first(where: {
+                        !$0.isHistory && $0.displayName.lowercased() == loweredCommand
+                    }) {
+                        return commandMatch
+                    }
+
+                    return results.first(where: { !$0.isHistory })
+                }
+
+                guard let target = findTarget(for: results) else {
+                    #if DEBUG
+                    print("[HistoryCommand] No launchable target for '\(trimmed)'")
+                    #endif
+                    return
+                }
+
+                if target.isHistory {
+                    #if DEBUG
+                    print("[HistoryCommand] Target is history entry; aborting to prevent recursion")
+                    #endif
+                    return
+                }
+
+                if self.launchApplication(target) {
+                    self.recordSuccessfulRun(command: trimmed, displayName: target.displayName)
                 }
             }
         }
