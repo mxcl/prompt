@@ -55,36 +55,6 @@ class VibrantTextField: NSTextField {
     override var allowsVibrancy: Bool { true }
 }
 
-class InsetTextFieldCell: NSTextFieldCell {
-    var contentInsets = NSEdgeInsets(top: 0, left: 0, bottom: 0, right: 0)
-
-    private func inset(_ rect: NSRect) -> NSRect {
-        return NSRect(
-            x: rect.origin.x + contentInsets.left,
-            y: rect.origin.y + contentInsets.bottom,
-            width: rect.size.width - contentInsets.left - contentInsets.right,
-            height: rect.size.height - contentInsets.top - contentInsets.bottom
-        )
-    }
-
-    override func drawingRect(forBounds rect: NSRect) -> NSRect {
-        let insetRect = inset(rect)
-        return super.drawingRect(forBounds: insetRect)
-    }
-
-    override func edit(withFrame rect: NSRect, in controlView: NSView, editor textObj: NSText, delegate: Any?, event: NSEvent?) {
-        super.edit(withFrame: inset(rect), in: controlView, editor: textObj, delegate: delegate, event: event)
-    }
-
-    override func select(withFrame rect: NSRect, in controlView: NSView, editor textObj: NSText, delegate: Any?, start selStart: Int, length selLength: Int) {
-        super.select(withFrame: inset(rect), in: controlView, editor: textObj, delegate: delegate, start: selStart, length: selLength)
-    }
-
-    override func drawInterior(withFrame frame: NSRect, in view: NSView) {
-        super.drawInterior(withFrame: inset(frame), in: view)
-    }
-}
-
 protocol TableViewNavigationDelegate: AnyObject {
     func tableViewShouldReturnToSearchField(_ tableView: NSTableView)
     func tableViewShouldLaunchSelectedApp(_ tableView: NSTableView)
@@ -104,6 +74,12 @@ class MainViewController: NSViewController {
     private var suppressNextManualUpdate = false
     private var preferredHistoryQuery: String?
     private let isAutocompleteEnabled = false // Temporary toggle while debugging autocomplete behavior
+
+    private func configureFieldEditorInsets() {
+        guard let editor = view.window?.fieldEditor(true, for: searchField) as? NSTextView else { return }
+        editor.textContainerInset = NSSize(width: 18, height: 10)
+        editor.textContainer?.lineFragmentPadding = 0
+    }
 
     // MARK: - Button Actions
     @objc private func homepageButtonPressed(_ sender: NSButton) {
@@ -178,6 +154,7 @@ class MainViewController: NSViewController {
             guard let self = self else { return }
             self.view.window?.makeFirstResponder(self.searchField)
             self.searchField.selectText(nil)
+            self.configureFieldEditorInsets()
         }
     }
 
@@ -202,16 +179,8 @@ class MainViewController: NSViewController {
     }
 
     private func setupUI() {
-        // Create search field with custom insets to mimic Raycast styling
-        let insetCell = InsetTextFieldCell(textCell: "")
-        insetCell.contentInsets = NSEdgeInsets(top: 10, left: 18, bottom: 10, right: 18)
-        insetCell.usesSingleLineMode = true
-        insetCell.wraps = false
-        insetCell.isScrollable = true
-        insetCell.lineBreakMode = .byTruncatingTail
-
+        // Create search field
         searchField = NSTextField(frame: NSRect(x: 0, y: 0, width: 0, height: 0))
-        searchField.cell = insetCell
         searchField.target = self
         searchField.action = #selector(searchFieldChanged(_:))
         searchField.delegate = self
@@ -220,12 +189,18 @@ class MainViewController: NSViewController {
         searchField.focusRingType = .none
         searchField.drawsBackground = false
         searchField.font = NSFont.systemFont(ofSize: 24, weight: .semibold)
+        searchField.isEditable = true
+        searchField.isSelectable = true
         searchField.textColor = NSColor.white
+        let placeholderParagraph = NSMutableParagraphStyle()
+        placeholderParagraph.alignment = .left
+        placeholderParagraph.firstLineHeadIndent = 18
         searchField.placeholderAttributedString = NSAttributedString(
             string: "Run",
             attributes: [
                 .foregroundColor: NSColor.white.withAlphaComponent(0.55),
-                .font: NSFont.systemFont(ofSize: 24, weight: .semibold)
+                .font: NSFont.systemFont(ofSize: 24, weight: .semibold),
+                .paragraphStyle: placeholderParagraph
             ]
         )
 
@@ -307,6 +282,10 @@ class MainViewController: NSViewController {
         let currentEvent = NSApp.currentEvent
         let isKeyDown = currentEvent?.type == .keyDown
         let fieldEditor = view.window?.fieldEditor(true, for: textField) as? NSTextView
+        if let editor = fieldEditor {
+            editor.textContainerInset = NSSize(width: 18, height: 10)
+            editor.textContainer?.lineFragmentPadding = 0
+        }
         let typedText = fieldEditor?.string ?? textField.stringValue
 
         if isApplyingAutocomplete {
