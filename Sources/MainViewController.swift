@@ -287,15 +287,24 @@ class MainViewController: NSViewController {
         commandHistory.record(command: trimmed, display: displayName)
     }
 
+    private func resetSearchFieldAndResults() {
+        searchField.stringValue = ""
+        lastManualQuery = ""
+        preferredHistoryCommand = nil
+        preferredHistoryQuery = nil
+        suppressNextManualUpdate = false
+        apps = []
+        tableView.reloadData()
+        focusAndSelectSearchField()
+    }
+
     private func openURLIfPossible(from input: String) -> Bool {
         guard let url = resolvedURL(from: input) else { return false }
         let success = NSWorkspace.shared.open(url)
         if success {
             recordSuccessfulRun(command: input)
         }
-        searchField.stringValue = ""
-        apps = []
-        tableView.reloadData()
+        resetSearchFieldAndResults()
         return success
     }
 
@@ -363,11 +372,13 @@ class MainViewController: NSViewController {
         guard row >= 0 && row < apps.count else { return }
 
         let app = apps[row]
+        let commandText = searchField.stringValue
         if launchApplication(app) {
             if case .historyCommand = app {
                 // already handled in executeHistoryCommand
             } else {
-                recordSuccessfulRun(command: searchField.stringValue, displayName: app.displayName)
+                recordSuccessfulRun(command: commandText, displayName: app.displayName)
+                resetSearchFieldAndResults()
             }
         }
     }
@@ -528,6 +539,7 @@ class MainViewController: NSViewController {
 
                 if self.launchApplication(target) {
                     self.recordSuccessfulRun(command: trimmed, displayName: target.displayName)
+                    self.resetSearchFieldAndResults()
                 }
             }
         }
@@ -857,11 +869,13 @@ extension MainViewController: NSTextFieldDelegate {
                 let selectedRow = tableView.selectedRow
                 if selectedRow >= 0 && selectedRow < apps.count {
                     let app = apps[selectedRow]
+                    let commandText = searchField.stringValue
                     if launchApplication(app) {
                         if case .historyCommand = app {
                             // handled within executeHistoryCommand
                         } else {
-                            recordSuccessfulRun(command: searchField.stringValue, displayName: app.displayName)
+                            recordSuccessfulRun(command: commandText, displayName: app.displayName)
+                            resetSearchFieldAndResults()
                         }
                     }
                 }
@@ -907,7 +921,9 @@ extension MainViewController: TableViewNavigationDelegate {
                 if case .historyCommand = app {
                     // handled within executeHistoryCommand
                 } else {
-                    recordSuccessfulRun(command: searchField.stringValue, displayName: app.displayName)
+                    let commandText = searchField.stringValue
+                    recordSuccessfulRun(command: commandText, displayName: app.displayName)
+                    resetSearchFieldAndResults()
                 }
             }
         }
