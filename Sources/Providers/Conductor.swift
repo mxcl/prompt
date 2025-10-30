@@ -52,11 +52,12 @@ final class SearchConductor {
     private func rerank(results: [ProviderResult], query: SearchQuery) -> [SearchResult] {
         var installedFilenames = Set<String>()
         var installed: [ProviderResult] = []
+        var installedIndexByDisplay: [String: Int] = [:]
         var casks: [ProviderResult] = []
-        var others: [ProviderResult] = []
+        var history: [ProviderResult] = []
         installed.reserveCapacity(results.count)
         casks.reserveCapacity(results.count)
-        others.reserveCapacity(results.count)
+        history.reserveCapacity(results.count)
 
         for result in results {
             switch result.result {
@@ -65,11 +66,12 @@ final class SearchConductor {
                     let filename = URL(fileURLWithPath: path).lastPathComponent.lowercased()
                     installedFilenames.insert(filename)
                 }
+                installedIndexByDisplay[result.result.displayName.lowercased()] = installed.count
                 installed.append(result)
             case .availableCask:
                 casks.append(result)
             case .historyCommand:
-                others.append(result)
+                history.append(result)
             }
         }
 
@@ -81,10 +83,30 @@ final class SearchConductor {
             return !duplicatesInstalled
         }
 
+        var mergedHistory: [ProviderResult] = []
+        mergedHistory.reserveCapacity(history.count)
+
+        for entry in history {
+            guard case .historyCommand(_, let display) = entry.result else {
+                mergedHistory.append(entry)
+                continue
+            }
+            if let display, !display.isEmpty {
+                let key = display.lowercased()
+                if let idx = installedIndexByDisplay[key] {
+                    let existing = installed[idx]
+                    let combinedScore = existing.score + entry.score
+                    installed[idx] = ProviderResult(source: existing.source, result: existing.result, score: combinedScore)
+                    continue
+                }
+            }
+            mergedHistory.append(entry)
+        }
+
         var filtered: [ProviderResult] = []
-        filtered.reserveCapacity(installed.count + others.count + filteredCasks.count)
+        filtered.reserveCapacity(installed.count + mergedHistory.count + filteredCasks.count)
         filtered.append(contentsOf: installed)
-        filtered.append(contentsOf: others)
+        filtered.append(contentsOf: mergedHistory)
         filtered.append(contentsOf: filteredCasks)
 
         let sorted = filtered.sorted { lhs, rhs in
