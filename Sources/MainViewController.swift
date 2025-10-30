@@ -89,13 +89,22 @@ class MainViewController: NSViewController {
     }
 
     override func loadView() {
-        view = NSView(frame: NSRect(x: 0, y: 0, width: 600, height: 400))
+        let effectView = NSVisualEffectView(frame: NSRect(x: 0, y: 0, width: 600, height: 400))
+        effectView.material = .hudWindow
+        effectView.blendingMode = .withinWindow
+        effectView.state = .active
+        effectView.wantsLayer = true
+        effectView.layer?.cornerRadius = 18
+        effectView.layer?.masksToBounds = true
+        if #available(macOS 11.0, *) {
+            effectView.layer?.cornerCurve = .continuous
+        }
+        view = effectView
         setupUI()
     }
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        view.wantsLayer = true
         setupNotifications()
         performSearch("")
     }
@@ -160,11 +169,20 @@ class MainViewController: NSViewController {
 
     private func setupUI() {
         // Create search field
-        searchField = NSTextField(frame: NSRect(x: 20, y: 350, width: 560, height: 24))
+        searchField = NSTextField(frame: NSRect(x: 0, y: 0, width: 0, height: 0))
         searchField.placeholderString = "Run"
         searchField.target = self
         searchField.action = #selector(searchFieldChanged(_:))
         searchField.delegate = self
+        searchField.isBordered = false
+        searchField.isBezeled = false
+        searchField.focusRingType = .none
+        searchField.drawsBackground = false
+        searchField.font = NSFont.systemFont(ofSize: 20, weight: .medium)
+        searchField.wantsLayer = true
+        searchField.layer?.cornerRadius = 12
+        searchField.layer?.masksToBounds = true
+        searchField.layer?.backgroundColor = NSColor.textBackgroundColor.withAlphaComponent(0.25).cgColor
 
         // Add continuous text change monitoring
         NotificationCenter.default.addObserver(
@@ -183,25 +201,29 @@ class MainViewController: NSViewController {
         tableView.target = self
         tableView.doubleAction = #selector(tableViewDoubleClicked(_:))
         tableView.navigationDelegate = self
-
-        // Configure selection behavior
+        tableView.headerView = nil
+        tableView.rowHeight = 52
+        tableView.intercellSpacing = NSSize(width: 0, height: 8)
+        tableView.backgroundColor = .clear
+        tableView.selectionHighlightStyle = .regular
+        tableView.columnAutoresizingStyle = .uniformColumnAutoresizingStyle
         tableView.allowsEmptySelection = false
 
         // Create table column
         let column = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("AppName"))
         column.title = ""
-        column.width = 560
+        column.resizingMask = .autoresizingMask
         tableView.addTableColumn(column)
 
-        // Hide the table header
-        tableView.headerView = nil
-
         // Create scroll view
-        scrollView = NSScrollView(frame: NSRect(x: 20, y: 20, width: 560, height: 320))
+        scrollView = NSScrollView(frame: .zero)
         scrollView.documentView = tableView
         scrollView.hasVerticalScroller = true
         scrollView.hasHorizontalScroller = false
         scrollView.autohidesScrollers = true
+        scrollView.drawsBackground = false
+        scrollView.borderType = .noBorder
+        scrollView.contentInsets = NSEdgeInsets(top: 8, left: 0, bottom: 16, right: 0)
         view.addSubview(scrollView)
 
         // Setup Auto Layout
@@ -214,16 +236,16 @@ class MainViewController: NSViewController {
 
         NSLayoutConstraint.activate([
             // Search field constraints
-            searchField.topAnchor.constraint(equalTo: view.topAnchor, constant: 20),
-            searchField.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
-            searchField.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
-            searchField.heightAnchor.constraint(equalToConstant: 24),
+            searchField.topAnchor.constraint(equalTo: view.topAnchor, constant: 24),
+            searchField.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
+            searchField.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
+            searchField.heightAnchor.constraint(equalToConstant: 44),
 
             // Scroll view constraints - moved up to be against search field
-            scrollView.topAnchor.constraint(equalTo: searchField.bottomAnchor, constant: 1),
-            scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
-            scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
-            scrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -20)
+            scrollView.topAnchor.constraint(equalTo: searchField.bottomAnchor, constant: 16),
+            scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            scrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -24)
         ])
     }
 
