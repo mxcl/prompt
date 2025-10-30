@@ -392,19 +392,37 @@ class MainViewController: NSViewController {
             #if DEBUG
             print("[Launch] Attempting bundle id \(bundleId)")
             #endif
-            if workspace.launchApplication(withBundleIdentifier: bundleId,
-                                           options: [],
-                                           additionalEventParamDescriptor: nil,
-                                           launchIdentifier: nil) {
-                #if DEBUG
-                print("[Launch] bundle id launch succeeded")
-                #endif
-                return true
-            }
             if let running = NSRunningApplication.runningApplications(withBundleIdentifier: bundleId).first {
                 running.activate(options: [.activateIgnoringOtherApps])
                 #if DEBUG
                 print("[Launch] bundle id already running; activated")
+                #endif
+                return true
+            }
+
+            if #available(macOS 11.0, *) {
+                if let appURL = workspace.urlForApplication(withBundleIdentifier: bundleId) {
+                    let configuration = NSWorkspace.OpenConfiguration()
+                    configuration.activates = true
+                    workspace.openApplication(at: appURL, configuration: configuration) { runningApp, error in
+                        #if DEBUG
+                        if let error = error {
+                            print("[Launch] bundle id launch failed with error: \(error.localizedDescription)")
+                        } else if let launchedBundleId = runningApp?.bundleIdentifier {
+                            print("[Launch] bundle id launch succeeded for \(launchedBundleId)")
+                        } else {
+                            print("[Launch] bundle id launch requested")
+                        }
+                        #endif
+                    }
+                    return true
+                }
+            } else if workspace.launchApplication(withBundleIdentifier: bundleId,
+                                                  options: [],
+                                                  additionalEventParamDescriptor: nil,
+                                                  launchIdentifier: nil) {
+                #if DEBUG
+                print("[Launch] bundle id launch succeeded")
                 #endif
                 return true
             }
@@ -819,7 +837,7 @@ extension MainViewController: NSTextFieldDelegate {
                  textView: NSTextView,
                  completions words: [String],
                  forPartialWordRange charRange: NSRange,
-                 indexOfSelectedItem index: UnsafeMutablePointer<Int>?) -> [String] {
+                 indexOfSelectedItem index: UnsafeMutablePointer<Int>) -> [String] {
         let fullText = textView.string as NSString
         guard charRange.location != NSNotFound,
               NSMaxRange(charRange) <= fullText.length else {
@@ -827,9 +845,7 @@ extension MainViewController: NSTextFieldDelegate {
         }
         let prefix = fullText.substring(with: charRange)
         let matches = commandHistory.completions(matching: prefix)
-        if !matches.isEmpty {
-            index?.pointee = 0
-        }
+        index.pointee = matches.isEmpty ? NSNotFound : 0
         return matches
     }
 }
