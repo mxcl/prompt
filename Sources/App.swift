@@ -16,6 +16,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private func setupApplication() {
         NSApp.setActivationPolicy(.accessory)
 
+        setupMainMenu()
+
         windowController = MainWindowController()
     }
 
@@ -106,5 +108,78 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             showMainWindow()
         }
         return true
+    }
+
+    private func setupMainMenu() {
+        let mainMenu = NSMenu(title: "MainMenu")
+
+        // App submenu (kept minimal but avoids empty menu warnings)
+        let appMenuItem = NSMenuItem(title: "teaBASEv2", action: nil, keyEquivalent: "")
+        let appMenu = NSMenu()
+        appMenu.addItem(
+            withTitle: "Quit teaBASEv2",
+            action: #selector(NSApplication.terminate(_:)),
+            keyEquivalent: "q"
+        )
+        appMenuItem.submenu = appMenu
+        mainMenu.addItem(appMenuItem)
+
+        // Edit menu supplying standard responder chain actions for keyboard shortcuts
+        let editMenuItem = NSMenuItem(title: "Edit", action: nil, keyEquivalent: "")
+        editMenuItem.submenu = NSMenu(title: "Edit")
+        if let editMenu = editMenuItem.submenu {
+            let undoItem = NSMenuItem(
+                title: "Undo",
+                action: #selector(UndoManager.undo),
+                keyEquivalent: "z"
+            )
+            undoItem.target = nil
+            editMenu.addItem(undoItem)
+
+            let redoItem = NSMenuItem(
+                title: "Redo",
+                action: #selector(UndoManager.redo),
+                keyEquivalent: "Z"
+            )
+            redoItem.target = nil
+            editMenu.addItem(redoItem)
+
+            editMenu.addItem(NSMenuItem.separator())
+
+            let cutItem = NSMenuItem(
+                title: "Cut",
+                action: #selector(NSText.cut(_:)),
+                keyEquivalent: "x"
+            )
+            cutItem.target = nil
+            editMenu.addItem(cutItem)
+
+            let copyItem = NSMenuItem(
+                title: "Copy",
+                action: #selector(NSText.copy(_:)),
+                keyEquivalent: "c"
+            )
+            copyItem.target = nil
+            editMenu.addItem(copyItem)
+
+            let pasteItem = NSMenuItem(
+                title: "Paste",
+                action: #selector(NSText.paste(_:)),
+                keyEquivalent: "v"
+            )
+            pasteItem.target = nil
+            editMenu.addItem(pasteItem)
+
+            let selectAllItem = NSMenuItem(
+                title: "Select All",
+                action: #selector(NSText.selectAll(_:)),
+                keyEquivalent: "a"
+            )
+            selectAllItem.target = nil
+            editMenu.addItem(selectAllItem)
+        }
+        mainMenu.addItem(editMenuItem)
+
+        NSApp.mainMenu = mainMenu
     }
 }
