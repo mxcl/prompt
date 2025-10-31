@@ -8,6 +8,10 @@ final class SearchConductor {
     private var searchGeneration: UInt64 = 0
     private let generationLock = NSLock()
     private let emptyQueryHistoryLimit = 8
+#if DEBUG
+    private var debugScoresByIdentifier: [String: Int] = [:]
+    private let debugScoresLock = NSLock()
+#endif
 
     private init(providers: [SearchProvider] = [
         InstalledApplicationsProvider(),
@@ -25,6 +29,11 @@ final class SearchConductor {
                 .map { entry in
                     SearchResult.historyCommand(command: entry.command, display: entry.display)
                 }
+#if DEBUG
+            debugScoresLock.lock()
+            debugScoresByIdentifier.removeAll()
+            debugScoresLock.unlock()
+#endif
             completion(recents)
             return
         }
@@ -127,6 +136,9 @@ final class SearchConductor {
         var seenDisplayNames = Set<String>()
         var finalResults: [SearchResult] = []
         finalResults.reserveCapacity(sorted.count)
+#if DEBUG
+        var debugScores: [String: Int] = [:]
+#endif
 
         for entry in sorted {
             let identifier = entry.result.identifierHash
@@ -138,7 +150,16 @@ final class SearchConductor {
             }
             seenDisplayNames.insert(displayKey)
             finalResults.append(entry.result)
+#if DEBUG
+            debugScores[identifier] = entry.score
+#endif
         }
+
+#if DEBUG
+        debugScoresLock.lock()
+        debugScoresByIdentifier = debugScores
+        debugScoresLock.unlock()
+#endif
 
         return finalResults
     }
@@ -180,4 +201,13 @@ final class SearchConductor {
         defer { generationLock.unlock() }
         return generation == searchGeneration
     }
+
+#if DEBUG
+    func score(for result: SearchResult) -> Int? {
+        let identifier = result.identifierHash
+        debugScoresLock.lock()
+        defer { debugScoresLock.unlock() }
+        return debugScoresByIdentifier[identifier]
+    }
+#endif
 }

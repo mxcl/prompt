@@ -406,6 +406,15 @@ class MainViewController: NSViewController {
         return true
     }
 
+    private func titleWithDebugScore(_ base: String, result: SearchResult) -> String {
+        #if DEBUG
+        if let score = SearchConductor.shared.score(for: result) {
+            return "\(base) [\(score)]"
+        }
+        #endif
+        return base
+    }
+
     private func performSearch(_ searchText: String) {
         SearchConductor.shared.search(query: searchText) { [weak self] results in
             DispatchQueue.main.async {
@@ -837,7 +846,8 @@ extension MainViewController: NSTableViewDelegate {
 
         switch app {
         case .installedAppMetadata(_, let path, _, let desc):
-            cell.titleField.stringValue = displayName
+            let title = titleWithDebugScore(displayName, result: app)
+            cell.titleField.stringValue = title
             cell.titleField.textColor = NSColor.white
             var secondary: String? = nil
             if let p = path {
@@ -861,7 +871,9 @@ extension MainViewController: NSTableViewDelegate {
             }
             cell.configureForInstalled()
         case .availableCask(let cask):
-            cell.titleField.stringValue = displayName + " (install)"
+            var title = displayName + " (install)"
+            title = titleWithDebugScore(title, result: app)
+            cell.titleField.stringValue = title
             cell.titleField.textColor = NSColor.systemGreen.withAlphaComponent(0.85)
             if let desc = cask.desc, !desc.isEmpty {
                 let singleLine = desc.replacingOccurrences(of: "\n", with: " ")
@@ -887,8 +899,10 @@ extension MainViewController: NSTableViewDelegate {
             cell.descField.isHidden = false
             cell.descField.textColor = NSColor.white.withAlphaComponent(0.55)
             cell.configureForHistory(command: command, display: display)
+            cell.titleField.stringValue = titleWithDebugScore(cell.titleField.stringValue, result: app)
         @unknown default:
-            cell.titleField.stringValue = displayName
+            let title = titleWithDebugScore(displayName, result: app)
+            cell.titleField.stringValue = title
             cell.descField.isHidden = true
             cell.configureForInstalled()
         }
