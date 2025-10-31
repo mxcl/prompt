@@ -51,7 +51,15 @@ class NavigableTableView: NSTableView {
                 return
             }
         default:
-            break
+            let modifiers = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+            let navigationModifiers: NSEvent.ModifierFlags = [.command, .control, .option, .function]
+            if modifiers.isDisjoint(with: navigationModifiers) {
+                navigationDelegate?.tableViewShouldReturnToSearchField(self)
+                if let responder = window?.firstResponder, responder !== self {
+                    responder.keyDown(with: event)
+                }
+                return
+            }
         }
         super.keyDown(with: event)
     }
