@@ -491,62 +491,91 @@ class MainViewController: NSViewController {
     private func launchInstalledApp(bundleId: String?, path: String?) -> Bool {
         let workspace = NSWorkspace.shared
 
+        if #available(macOS 11.0, *) {
+            // Use Launch Services reopen semantics so running apps behave like Spotlight
+            func openApplication(at appURL: URL) -> Bool {
+                let configuration = NSWorkspace.OpenConfiguration()
+                configuration.activates = true
+                configuration.addsToRecentItems = false
+                workspace.openApplication(at: appURL, configuration: configuration) { runningApp, error in
+                    #if DEBUG
+                    if let error = error {
+                        print("[Launch] openApplication failed: \(error.localizedDescription)")
+                    } else if let launchedBundleId = runningApp?.bundleIdentifier {
+                        print("[Launch] openApplication succeeded for \(launchedBundleId)")
+                    } else {
+                        print("[Launch] openApplication requested launch")
+                    }
+                    #endif
+                }
+                return true
+            }
+
+            if let bundleId = bundleId {
+                #if DEBUG
+                print("[Launch] Attempting bundle id \(bundleId)")
+                #endif
+                if let appURL = workspace.urlForApplication(withBundleIdentifier: bundleId) {
+                    return openApplication(at: appURL)
+                }
+
+                if let running = NSRunningApplication.runningApplications(withBundleIdentifier: bundleId).first {
+                    running.activate(options: [.activateIgnoringOtherApps, .activateAllWindows])
+                    #if DEBUG
+                    print("[Launch] bundle id running; activated existing instance")
+                    #endif
+                    return true
+                }
+
+                #if DEBUG
+                print("[Launch] bundle id lookup failed; checking path")
+                #endif
+            }
+
+            if let path = path {
+                let appURL = URL(fileURLWithPath: path)
+                #if DEBUG
+                print("[Launch] Attempting path \(appURL.path)")
+                #endif
+                return openApplication(at: appURL)
+            }
+
+            #if DEBUG
+            print("[Launch] launch failed for bundleId=\(bundleId ?? "nil") path=\(path ?? "nil")")
+            #endif
+            return false
+        }
+
         if let bundleId = bundleId {
             #if DEBUG
             print("[Launch] Attempting bundle id \(bundleId)")
             #endif
-            if let running = NSRunningApplication.runningApplications(withBundleIdentifier: bundleId).first {
-                running.activate(options: [.activateIgnoringOtherApps])
+            if workspace.launchApplication(withBundleIdentifier: bundleId,
+                                           options: [],
+                                           additionalEventParamDescriptor: nil,
+                                           launchIdentifier: nil) {
                 #if DEBUG
-                print("[Launch] bundle id already running; activated")
-                #endif
-                return true
-            }
-
-            if #available(macOS 11.0, *) {
-                if let appURL = workspace.urlForApplication(withBundleIdentifier: bundleId) {
-                    let configuration = NSWorkspace.OpenConfiguration()
-                    configuration.activates = true
-                    workspace.openApplication(at: appURL, configuration: configuration) { runningApp, error in
-                        #if DEBUG
-                        if let error = error {
-                            print("[Launch] bundle id launch failed with error: \(error.localizedDescription)")
-                        } else if let launchedBundleId = runningApp?.bundleIdentifier {
-                            print("[Launch] bundle id launch succeeded for \(launchedBundleId)")
-                        } else {
-                            print("[Launch] bundle id launch requested")
-                        }
-                        #endif
-                    }
-                    return true
-                }
-            } else if workspace.launchApplication(withBundleIdentifier: bundleId,
-                                                  options: [],
-                                                  additionalEventParamDescriptor: nil,
-                                                  launchIdentifier: nil) {
-                #if DEBUG
-                print("[Launch] bundle id launch succeeded")
+                print("[Launch] legacy bundle id launch succeeded")
                 #endif
                 return true
             }
             #if DEBUG
-            print("[Launch] bundle id launch failed; checking path")
+            print("[Launch] legacy bundle id launch failed; checking path")
             #endif
         }
 
         if let path = path {
-            let url = URL(fileURLWithPath: path)
             #if DEBUG
             print("[Launch] Attempting path \(path)")
             #endif
-            if workspace.open(url) {
+            if workspace.launchApplication(path) {
                 #if DEBUG
-                print("[Launch] path open succeeded")
+                print("[Launch] legacy path launch succeeded")
                 #endif
                 return true
             }
             #if DEBUG
-            print("[Launch] path open failed")
+            print("[Launch] legacy path launch failed")
             #endif
         }
 
