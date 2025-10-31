@@ -2,6 +2,8 @@ import Cocoa
 
 class MainWindowController: NSWindowController {
 
+    private var escapeKeyMonitor: Any?
+
     convenience init() {
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 600, height: 400),
@@ -42,5 +44,24 @@ class MainWindowController: NSWindowController {
 
         // Ensure the app is active
         NSApp.activate(ignoringOtherApps: true)
+
+        // Hide the window when escape is pressed while it is focused
+        escapeKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            guard event.keyCode == 53, // Escape key
+                  let self,
+                  let window = self.window,
+                  (event.window == window || window.isKeyWindow) else {
+                return event
+            }
+
+            window.orderOut(nil)
+            return nil
+        }
+    }
+
+    deinit {
+        if let monitor = escapeKeyMonitor {
+            NSEvent.removeMonitor(monitor)
+        }
     }
 }
