@@ -13,6 +13,12 @@ class NavigableTableView: NSTableView {
                 navigationDelegate?.tableViewShouldReturnToSearchField(self)
                 return
             }
+        case 125: // Down arrow
+            let lastRowIndex = numberOfRows - 1
+            if lastRowIndex >= 0, self.selectedRow == lastRowIndex {
+                navigationDelegate?.tableViewShouldReturnToSearchField(self)
+                return
+            }
         case 51: // Delete / backspace
             let row = self.selectedRow
             if row >= 0,
