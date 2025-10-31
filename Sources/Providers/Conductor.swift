@@ -148,7 +148,6 @@ final class SearchConductor {
         case .installedAppMetadata:
             return 3
         case .historyCommand(let command, _):
-            print("FOO", command.lowercased(), query.lowercased)
             if command.lowercased() == query.lowercased {
                 return 4
             }
