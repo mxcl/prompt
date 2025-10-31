@@ -166,7 +166,10 @@ final class SearchConductor {
 
     private func priority(for result: ProviderResult, query: SearchQuery) -> Int {
         switch result.result {
-        case .installedAppMetadata:
+        case .installedAppMetadata(let name, _, _, _):
+            if name.lowercased() == query.lowercased {
+                return 5
+            }
             return 3
         case .historyCommand(let command, _):
             if command.lowercased() == query.lowercased {
