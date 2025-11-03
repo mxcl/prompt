@@ -3,10 +3,12 @@ import Foundation
 struct CommandHistoryEntry: Codable {
     let command: String
     let display: String?
+    let subtitle: String?
 
-    init(command: String, display: String?) {
+    init(command: String, display: String?, subtitle: String?) {
         self.command = command
         self.display = display
+        self.subtitle = subtitle
     }
 }
 
@@ -31,7 +33,7 @@ final class CommandHistory {
            let decoded = try? JSONDecoder().decode([CommandHistoryEntry].self, from: data) {
             entries = decoded
         } else if let legacy = defaults.stringArray(forKey: legacyKey) {
-            entries = legacy.map { CommandHistoryEntry(command: $0, display: nil) }
+            entries = legacy.map { CommandHistoryEntry(command: $0, display: nil, subtitle: nil) }
             persist()
         } else {
             entries = []
@@ -39,15 +41,16 @@ final class CommandHistory {
     }
 
     /// Records a command the user launched successfully.
-    func record(command: String, display: String?) {
+    func record(command: String, display: String?, subtitle: String?) {
         let trimmedCommand = command.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedCommand.isEmpty else { return }
-        let trimmedDisplay = display?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedDisplay = CommandHistory.sanitized(display)
+        let trimmedSubtitle = CommandHistory.sanitized(subtitle)
 
         if let existingIndex = entries.firstIndex(where: { $0.command.caseInsensitiveCompare(trimmedCommand) == .orderedSame }) {
             entries.remove(at: existingIndex)
         }
-        entries.insert(CommandHistoryEntry(command: trimmedCommand, display: trimmedDisplay), at: 0)
+        entries.insert(CommandHistoryEntry(command: trimmedCommand, display: trimmedDisplay, subtitle: trimmedSubtitle), at: 0)
 
         if entries.count > maxEntries {
             entries.removeLast(entries.count - maxEntries)
@@ -137,6 +140,13 @@ final class CommandHistory {
         if let data = try? JSONEncoder().encode(entries) {
             defaults.set(data, forKey: storageKey)
         }
+    }
+
+    private static func sanitized(_ text: String?) -> String? {
+        guard let text = text else { return nil }
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+        return trimmed.replacingOccurrences(of: "\n", with: " ")
     }
 
     private func fuzzyScore(candidate: String, query: String) -> Int? {

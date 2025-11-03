@@ -5,21 +5,7 @@ extension SearchResult {
         switch self {
         case .installedAppMetadata(let name, let path, _, let description):
             let title = decoratedTitle(for: name)
-            var subtitle: String?
-
-            if let path {
-                subtitle = path
-            }
-
-            if let description, !description.isEmpty {
-                let cleaned = description.replacingOccurrences(of: "\n", with: " ")
-                if let existing = subtitle, !existing.isEmpty {
-                    subtitle = existing + " — " + cleaned
-                } else {
-                    subtitle = cleaned
-                }
-            }
-
+            let subtitle = SearchResult.subtitleForInstalledApp(path: path, description: description)
             cell.apply(title: title, titleColor: NSColor.white, subtitle: subtitle)
             cell.configureForInstalled()
 
@@ -27,12 +13,7 @@ extension SearchResult {
             let baseTitle = "\(cask.displayName) (install)"
             let title = decoratedTitle(for: baseTitle)
 
-            var subtitle: String?
-            if let desc = cask.desc, !desc.isEmpty {
-                subtitle = desc.replacingOccurrences(of: "\n", with: " ")
-            } else if let homepage = cask.homepage, !homepage.isEmpty {
-                subtitle = homepage.replacingOccurrences(of: "\n", with: " ")
-            }
+            let subtitle = SearchResult.subtitleForCask(cask)
 
             cell.apply(title: title, titleColor: NSColor.systemGreen.withAlphaComponent(0.85), subtitle: subtitle)
             cell.configureForCask(
@@ -43,15 +24,17 @@ extension SearchResult {
                 installSelector: #selector(MainViewController.installButtonPressed(_:))
             )
 
-        case .historyCommand(let command, let display, let isRecent):
+        case .historyCommand(let command, let display, let storedSubtitle, let isRecent):
             let trimmedCommand = command.trimmingCharacters(in: .whitespacesAndNewlines)
             let trimmedDisplay = display?.trimmingCharacters(in: .whitespacesAndNewlines)
             let title = (trimmedDisplay?.isEmpty == false) ? trimmedDisplay! : trimmedCommand
-
+            let trimmedStoredSubtitle = storedSubtitle?.trimmingCharacters(in: .whitespacesAndNewlines)
             var subtitle: String?
-            if let trimmedDisplay, !trimmedDisplay.isEmpty,
-               !trimmedCommand.isEmpty,
-               trimmedDisplay.caseInsensitiveCompare(trimmedCommand) != .orderedSame {
+            if let trimmedStoredSubtitle, !trimmedStoredSubtitle.isEmpty {
+                subtitle = trimmedStoredSubtitle
+            } else if let trimmedDisplay, !trimmedDisplay.isEmpty,
+                      !trimmedCommand.isEmpty,
+                      trimmedDisplay.caseInsensitiveCompare(trimmedCommand) != .orderedSame {
                 subtitle = trimmedCommand
             }
 
@@ -67,26 +50,15 @@ extension SearchResult {
 
         case .url(let url):
             let title = decoratedTitle(for: url.absoluteString)
-            var subtitle: String?
-            if let host = url.host, !host.isEmpty {
-                var components: [String] = []
-                if let scheme = url.scheme?.uppercased(), !scheme.isEmpty {
-                    components.append(scheme)
-                }
-                components.append(host)
-                subtitle = components.joined(separator: " · ")
-            } else if !url.path.isEmpty {
-                subtitle = url.path
-            }
-
+            let subtitle = SearchResult.subtitleForURL(url)
             cell.apply(title: title, titleColor: NSColor.systemBlue, subtitle: subtitle)
             cell.configureForPlainText()
 
         case .filesystemEntry(let entry):
             let title = decoratedTitle(for: entry.displayName)
-            let subtitle = entry.url.path
+            let subtitle = SearchResult.subtitleForFilesystemEntry(entry)
             let color: NSColor = entry.isDirectory ? NSColor.systemOrange : NSColor.white
-            cell.apply(title: title, titleColor: color, subtitle: subtitle)
+            cell.apply(title: title, titleColor: color, subtitle: subtitle, tooltip: entry.url.path)
             cell.configureForPlainText()
 
         @unknown default:
@@ -111,10 +83,7 @@ extension SearchResult {
             return titleOnlyHeight
         case .historyCommand:
             return subtitleHeight
-        case .url(let url):
-            if (url.host?.isEmpty ?? true) && url.path.isEmpty {
-                return titleOnlyHeight
-            }
+        case .url:
             return subtitleHeight
         case .filesystemEntry:
             return subtitleHeight
@@ -135,19 +104,21 @@ extension SearchResult {
     @discardableResult
     func handlePrimaryAction(commandText: String, controller: MainViewController) -> Bool {
         switch self {
-        case .installedAppMetadata(_, let path, let bundleID, _):
+        case .installedAppMetadata(_, let path, let bundleID, let appDescription):
             guard controller.launchInstalledApp(bundleId: bundleID, path: path) else { return false }
-            controller.recordSuccessfulRun(command: commandText, displayName: displayName)
+            let subtitle = SearchResult.subtitleForInstalledApp(path: path, description: appDescription)
+            controller.recordSuccessfulRun(command: commandText, displayName: displayName, subtitle: subtitle)
             controller.resetSearchFieldAndResults()
             return true
 
         case .availableCask(let cask):
             guard controller.installCask(cask) else { return false }
-            controller.recordSuccessfulRun(command: commandText, displayName: displayName)
+            let subtitle = SearchResult.subtitleForCask(cask)
+            controller.recordSuccessfulRun(command: commandText, displayName: displayName, subtitle: subtitle)
             controller.resetSearchFieldAndResults()
             return true
 
-        case .historyCommand(let command, let display, _):
+        case .historyCommand(let command, let display, _, _):
             return controller.executeHistoryCommand(command, display: display)
 
         case .url(let url):
@@ -159,7 +130,8 @@ extension SearchResult {
                 return true
             } else {
                 guard controller.openFile(at: entry.url) else { return false }
-                controller.recordSuccessfulRun(command: entry.url.path, displayName: entry.displayName)
+                let subtitle = SearchResult.subtitleForFilesystemEntry(entry)
+                controller.recordSuccessfulRun(command: entry.url.path, displayName: entry.displayName, subtitle: subtitle)
                 controller.resetSearchFieldAndResults()
                 return true
             }
@@ -167,5 +139,48 @@ extension SearchResult {
         @unknown default:
             return false
         }
+    }
+}
+
+extension SearchResult {
+    static func subtitleForInstalledApp(path: String?, description: String?) -> String? {
+        let sanitizedPath = sanitizedSubtitleComponent(path)
+        let sanitizedDescription = sanitizedSubtitleComponent(description)
+
+        switch (sanitizedPath, sanitizedDescription) {
+        case let (path?, description?):
+            return "\(path) — \(description)"
+        case let (path?, nil):
+            return path
+        case let (nil, description?):
+            return description
+        case (nil, nil):
+            return nil
+        }
+    }
+
+    static func subtitleForCask(_ cask: CaskData.CaskItem) -> String? {
+        if let desc = sanitizedSubtitleComponent(cask.desc) {
+            return desc
+        }
+        if let homepage = sanitizedSubtitleComponent(cask.homepage) {
+            return homepage
+        }
+        return nil
+    }
+
+    static func subtitleForURL(_ url: URL) -> String? {
+        return "Opens in default browser"
+    }
+
+    static func subtitleForFilesystemEntry(_ entry: FileSystemEntry) -> String? {
+        return "Opens in Finder"
+    }
+
+    static func sanitizedSubtitleComponent(_ text: String?) -> String? {
+        guard let text = text else { return nil }
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+        return trimmed.replacingOccurrences(of: "\n", with: " ")
     }
 }
