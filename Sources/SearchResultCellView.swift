@@ -2,7 +2,7 @@ import Cocoa
 
 private final class PillTagView: NSView {
     private let label: NSTextField
-    private let horizontalPadding: CGFloat = 6
+    private let horizontalPadding: CGFloat = 4
     private let verticalPadding: CGFloat = 3
     private let text: String
     private let letterSpacing: CGFloat = 1.1
@@ -14,8 +14,8 @@ private final class PillTagView: NSView {
         wantsLayer = true
         translatesAutoresizingMaskIntoConstraints = false
 
-        label.font = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize - 1, weight: .medium)
-        label.textColor = NSColor.white.withAlphaComponent(0.85)
+        label.font = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize - 2, weight: .medium)
+        label.textColor = NSColor.white.withAlphaComponent(0.7)
         label.alignment = .center
         label.translatesAutoresizingMaskIntoConstraints = false
         applyAttributedText()
