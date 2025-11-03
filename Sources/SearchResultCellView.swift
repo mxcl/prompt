@@ -2,11 +2,14 @@ import Cocoa
 
 private final class PillTagView: NSView {
     private let label: NSTextField
-    private let horizontalPadding: CGFloat = 8
-    private let verticalPadding: CGFloat = 2
+    private let horizontalPadding: CGFloat = 10
+    private let verticalPadding: CGFloat = 3
+    private let text: String
+    private let letterSpacing: CGFloat = 1.1
 
     init(text: String) {
-        label = NSTextField(labelWithString: text)
+        self.text = text
+        label = NSTextField(labelWithString: "")
         super.init(frame: .zero)
         wantsLayer = true
         translatesAutoresizingMaskIntoConstraints = false
@@ -15,6 +18,7 @@ private final class PillTagView: NSView {
         label.textColor = NSColor.white.withAlphaComponent(0.85)
         label.alignment = .center
         label.translatesAutoresizingMaskIntoConstraints = false
+        applyAttributedText()
 
         addSubview(label)
 
@@ -41,8 +45,18 @@ private final class PillTagView: NSView {
 
     override func layout() {
         super.layout()
-        layer?.cornerRadius = bounds.height / 2
-        layer?.backgroundColor = NSColor.white.withAlphaComponent(0.14).cgColor
+        layer?.cornerRadius = min(6, bounds.height / 2)
+        layer?.backgroundColor = NSColor.white.withAlphaComponent(0.18).cgColor
+    }
+
+    private func applyAttributedText() {
+        let uppercase = text.uppercased()
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: label.font as Any,
+            .foregroundColor: label.textColor ?? NSColor.white,
+            .kern: letterSpacing
+        ]
+        label.attributedStringValue = NSAttributedString(string: uppercase, attributes: attributes)
     }
 }
 
