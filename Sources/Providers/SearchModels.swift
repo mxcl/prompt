@@ -5,12 +5,16 @@ enum SearchResult {
     case installedAppMetadata(name: String, path: String?, bundleID: String?, description: String?)
     case availableCask(CaskData.CaskItem)
     case historyCommand(command: String, display: String?)
+    case url(URL)
+    case filesystemEntry(FileSystemEntry)
 
     var displayName: String {
         switch self {
         case .installedAppMetadata(let name, _, _, _): return name
         case .availableCask(let c): return c.displayName
         case .historyCommand(let command, let display): return display ?? command
+        case .url(let url): return url.absoluteString
+        case .filesystemEntry(let entry): return entry.displayName
         }
     }
 
@@ -34,7 +38,27 @@ enum SearchResult {
             return cask.displayName.lowercased()
         case .historyCommand(let command, _):
             return command.lowercased()
+        case .url(let url):
+            return url.absoluteString.lowercased()
+        case .filesystemEntry(let entry):
+            return entry.url.path.lowercased()
         }
+    }
+}
+
+struct FileSystemEntry {
+    let url: URL
+    let isDirectory: Bool
+
+    var displayName: String {
+        var name = url.lastPathComponent
+        if name.isEmpty {
+            name = url.path
+        }
+        if isDirectory && !name.hasSuffix("/") {
+            return name + "/"
+        }
+        return name
     }
 }
 

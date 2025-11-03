@@ -87,6 +87,8 @@ final class SearchConductor {
                 casks.append(result)
             case .historyCommand:
                 history.append(result)
+            case .url, .filesystemEntry:
+                continue
             }
         }
 
@@ -180,6 +182,8 @@ final class SearchConductor {
             if isExactMatch(cask: cask, query: query.lowercased) {
                 return 3
             }
+            return 1
+        case .url, .filesystemEntry:
             return 1
         }
     }

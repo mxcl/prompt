@@ -288,9 +288,6 @@ class MainViewController: NSViewController {
 
     @objc private func searchFieldChanged(_ sender: NSTextField) {
         let current = sender.stringValue
-        if openURLIfPossible(from: current) {
-            return
-        }
         performSearch(current)
     }
 
@@ -361,7 +358,7 @@ class MainViewController: NSViewController {
         return nil
     }
 
-    private func recordSuccessfulRun(command: String, displayName: String? = nil) {
+    func recordSuccessfulRun(command: String, displayName: String? = nil) {
         let trimmed = command.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
         #if DEBUG
@@ -374,7 +371,7 @@ class MainViewController: NSViewController {
         commandHistory.record(command: trimmed, display: displayName)
     }
 
-    private func resetSearchFieldAndResults() {
+    func resetSearchFieldAndResults() {
         searchField.stringValue = ""
         lastManualQuery = ""
         preferredHistoryCommand = nil
@@ -388,12 +385,7 @@ class MainViewController: NSViewController {
 
     private func openURLIfPossible(from input: String) -> Bool {
         guard let url = resolvedURL(from: input) else { return false }
-        let success = NSWorkspace.shared.open(url)
-        if success {
-            recordSuccessfulRun(command: input)
-        }
-        resetSearchFieldAndResults()
-        return success
+        return openURL(url, originalInput: input)
     }
 
     private func applyAutocompleteIfNeeded(for textField: NSTextField, originalText: String) -> Bool {
@@ -420,16 +412,14 @@ class MainViewController: NSViewController {
         return true
     }
 
-    private func titleWithDebugScore(_ base: String, result: SearchResult) -> String {
-        #if DEBUG
-        if let score = SearchConductor.shared.score(for: result) {
-            return "\(base) [\(score)]"
-        }
-        #endif
-        return base
-    }
-
     private func performSearch(_ searchText: String) {
+        let trimmed = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if let filesystemResults = directoryListingResults(for: trimmed) {
+            applyResults(filesystemResults)
+            return
+        }
+
         SearchConductor.shared.search(query: searchText) { [weak self] results in
             DispatchQueue.main.async {
                 guard let self = self else { return }
@@ -447,13 +437,156 @@ class MainViewController: NSViewController {
                     finalResults.insert(match, at: 0)
                 }
 
-                self.apps = finalResults
-                self.tableView.reloadData()
-
-                // Always select the first item if there are results
-                if finalResults.count > 0 {
-                    self.tableView.selectRowIndexes(IndexSet(integer: 0), byExtendingSelection: false)
+                if let urlResult = self.urlResult(for: searchText) {
+                    let alreadyPresent = finalResults.contains { $0.identifierHash == urlResult.identifierHash }
+                    if !alreadyPresent {
+                        finalResults.insert(urlResult, at: 0)
+                    }
                 }
+
+                self.applyResults(finalResults)
+            }
+        }
+    }
+
+    private func applyResults(_ results: [SearchResult]) {
+        apps = results
+        tableView.reloadData()
+
+        if results.isEmpty {
+            tableView.deselectAll(nil)
+        } else {
+            tableView.selectRowIndexes(IndexSet(integer: 0), byExtendingSelection: false)
+            tableView.scrollRowToVisible(0)
+        }
+    }
+
+    private func urlResult(for input: String) -> SearchResult? {
+        guard let url = resolvedURL(from: input) else { return nil }
+        return .url(url)
+    }
+
+    private func directoryListingResults(for input: String) -> [SearchResult]? {
+        guard !input.isEmpty, looksLikePath(input) else { return nil }
+
+        let expanded = (input as NSString).expandingTildeInPath
+        let standardized = (expanded as NSString).standardizingPath
+        let fileManager = FileManager.default
+        var isDir: ObjCBool = false
+
+        if fileManager.fileExists(atPath: standardized, isDirectory: &isDir) {
+            let url = URL(fileURLWithPath: standardized, isDirectory: isDir.boolValue)
+            if isDir.boolValue {
+                return contentsOfDirectory(at: url, filter: nil)
+            } else {
+                return [.filesystemEntry(FileSystemEntry(url: url, isDirectory: false))]
+            }
+        }
+
+        if standardized.hasSuffix("/") {
+            let directoryURL = URL(fileURLWithPath: standardized)
+            if fileManager.fileExists(atPath: directoryURL.path, isDirectory: &isDir), isDir.boolValue {
+                return contentsOfDirectory(at: directoryURL, filter: nil)
+            }
+        }
+
+        let candidateURL = URL(fileURLWithPath: standardized)
+        let parentURL = candidateURL.deletingLastPathComponent()
+        let prefix = candidateURL.lastPathComponent
+
+        guard !prefix.isEmpty else { return nil }
+
+        if fileManager.fileExists(atPath: parentURL.path, isDirectory: &isDir), isDir.boolValue {
+            return contentsOfDirectory(at: parentURL, filter: prefix)
+        }
+
+        return nil
+    }
+
+    private func contentsOfDirectory(at directoryURL: URL, filter: String?) -> [SearchResult] {
+        let fileManager = FileManager.default
+        let resourceKeys: [URLResourceKey] = [.isDirectoryKey, .isSymbolicLinkKey, .isPackageKey]
+        let options: FileManager.DirectoryEnumerationOptions = [.skipsHiddenFiles]
+
+        let keySet = Set(resourceKeys)
+
+        guard let urls = try? fileManager.contentsOfDirectory(at: directoryURL, includingPropertiesForKeys: resourceKeys, options: options) else {
+            return []
+        }
+
+        let lowercaseFilter = filter?.lowercased()
+        let entries: [FileSystemEntry] = urls.compactMap { url in
+            if let lowercaseFilter, !lowercaseFilter.isEmpty {
+                if !url.lastPathComponent.lowercased().hasPrefix(lowercaseFilter) {
+                    return nil
+                }
+            }
+
+            let values = try? url.resourceValues(forKeys: keySet)
+            let isDirectoryValue = values?.isDirectory ?? url.hasDirectoryPath
+            let isPackage = values?.isPackage ?? false
+            let isDirectory = isDirectoryValue && !isPackage
+            return FileSystemEntry(url: url, isDirectory: isDirectory)
+        }
+
+        let sorted = entries.sorted { lhs, rhs in
+            if lhs.isDirectory != rhs.isDirectory {
+                return lhs.isDirectory && !rhs.isDirectory
+            }
+            return lhs.displayName.localizedCaseInsensitiveCompare(rhs.displayName) == .orderedAscending
+        }
+
+        return sorted.map { SearchResult.filesystemEntry($0) }
+    }
+
+    private func looksLikePath(_ input: String) -> Bool {
+        if input.isEmpty { return false }
+        if input.contains("://") { return false }
+        if input.hasPrefix("/") || input.hasPrefix("~") { return true }
+        if input.hasPrefix(".") { return true }
+        if let colonRange = input.range(of: ":") {
+            let prefix = input[..<colonRange.lowerBound]
+            if prefix.allSatisfy({ $0.isLetter }) {
+                return false
+            }
+        }
+        if input.contains("/") { return true }
+        return false
+    }
+
+    @discardableResult
+    func openURL(_ url: URL, originalInput: String) -> Bool {
+        let success = NSWorkspace.shared.open(url)
+        if success {
+            recordSuccessfulRun(command: originalInput, displayName: url.absoluteString)
+            resetSearchFieldAndResults()
+        }
+        return success
+    }
+
+    @discardableResult
+    func openFile(at url: URL) -> Bool {
+        return NSWorkspace.shared.open(url)
+    }
+
+    func drillDownIntoDirectory(_ url: URL) {
+        var path = url.path
+        if !path.hasSuffix("/") {
+            path.append("/")
+        }
+
+        suppressNextManualUpdate = true
+        searchField.stringValue = path
+        lastManualQuery = path
+        preferredHistoryCommand = nil
+        preferredHistoryQuery = nil
+
+        performSearch(path)
+
+        if let window = view.window {
+            window.makeFirstResponder(searchField)
+            if let editor = window.fieldEditor(true, for: searchField) as? NSTextView {
+                editor.selectedRange = NSRange(location: path.count, length: 0)
             }
         }
     }
@@ -464,31 +597,10 @@ class MainViewController: NSViewController {
 
         let app = apps[row]
         let commandText = searchField.stringValue
-        if launchApplication(app) {
-            if case .historyCommand = app {
-                // already handled in executeHistoryCommand
-            } else {
-                recordSuccessfulRun(command: commandText, displayName: app.displayName)
-                resetSearchFieldAndResults()
-            }
-        }
+        _ = app.handlePrimaryAction(commandText: commandText, controller: self)
     }
 
-    @discardableResult
-    private func launchApplication(_ searchResult: SearchResult) -> Bool {
-        switch searchResult {
-        case .installedAppMetadata(_, let path, let bundleID, _):
-            return launchInstalledApp(bundleId: bundleID, path: path)
-        case .availableCask(let cask):
-            return installCask(cask)
-        case .historyCommand(let command, let display):
-            return executeHistoryCommand(command, display: display)
-        @unknown default:
-            return false
-        }
-    }
-
-    private func launchInstalledApp(bundleId: String?, path: String?) -> Bool {
+    func launchInstalledApp(bundleId: String?, path: String?) -> Bool {
         let workspace = NSWorkspace.shared
 
         if #available(macOS 11.0, *) {
@@ -585,7 +697,7 @@ class MainViewController: NSViewController {
         return false
     }
 
-    private func installCask(_ cask: CaskData.CaskItem) -> Bool {
+    func installCask(_ cask: CaskData.CaskItem) -> Bool {
         // For now, just open the homepage or show info
         // You could implement actual Homebrew installation here
         if let homepage = cask.homepage, let url = URL(string: homepage) {
@@ -594,7 +706,7 @@ class MainViewController: NSViewController {
         return false
     }
 
-    private func executeHistoryCommand(_ command: String, display: String?) -> Bool {
+    func executeHistoryCommand(_ command: String, display: String?) -> Bool {
         let trimmed = command.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return false }
 
@@ -657,10 +769,7 @@ class MainViewController: NSViewController {
                     return
                 }
 
-                if self.launchApplication(target) {
-                    self.recordSuccessfulRun(command: trimmed, displayName: target.displayName)
-                    self.resetSearchFieldAndResults()
-                }
+                _ = target.handlePrimaryAction(commandText: trimmed, controller: self)
             }
         }
 
@@ -678,301 +787,19 @@ extension MainViewController: NSTableViewDataSource {
 // MARK: - NSTableViewDelegate
 extension MainViewController: NSTableViewDelegate {
     func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
-        let identifier = NSUserInterfaceItemIdentifier("AppCell")
+        guard row < apps.count else { return nil }
 
-        // Custom composite cell containing primary + optional secondary label
-        class AppCellView: NSTableCellView {
-            let titleField = VibrantTextField()
-            let descField = VibrantTextField()
-            let homepageButton = NSButton(title: "Homepage", target: nil, action: nil)
-            let installButton = NSButton(title: "Install", target: nil, action: nil)
-            let buttonStack = NSStackView()
-            private var trackingAdded = false
-            private var isCask = false
-            private var titleTrailingToButtons: NSLayoutConstraint!
-            private var descTrailingToButtons: NSLayoutConstraint!
-            private var titleTrailingToEdge: NSLayoutConstraint!
-            private var descTrailingToEdge: NSLayoutConstraint!
-            private var buttonVisibilityConstraints: [NSLayoutConstraint] = []
-            private var buttonHiddenConstraints: [NSLayoutConstraint] = []
+        let identifier = SearchResultCellView.reuseIdentifier
+        let cell = (tableView.makeView(withIdentifier: identifier, owner: self) as? SearchResultCellView) ?? SearchResultCellView()
+        cell.identifier = identifier
 
-            override init(frame frameRect: NSRect) {
-                super.init(frame: frameRect)
-                setup()
-            }
-            required init?(coder: NSCoder) {
-                super.init(coder: coder)
-                setup()
-            }
-            private func setup() {
-                identifier = identifier ?? NSUserInterfaceItemIdentifier("AppCell")
-                wantsLayer = true
-
-                for tf in [titleField, descField] {
-                    tf.isBordered = false
-                    tf.isEditable = false
-                    tf.backgroundColor = .clear
-                    tf.translatesAutoresizingMaskIntoConstraints = false
-                    tf.lineBreakMode = .byTruncatingTail
-                    addSubview(tf)
-                }
-                titleField.font = NSFont.systemFont(ofSize: NSFont.systemFontSize)
-                titleField.textColor = NSColor.white.withAlphaComponent(0.92)
-                titleField.maximumNumberOfLines = 1
-                titleField.usesSingleLineMode = true
-                descField.font = NSFont.systemFont(ofSize: 13)
-                descField.textColor = NSColor.white.withAlphaComponent(0.6)
-
-                textField = titleField
-                // Configure subtle buttons stack (less imposing)
-                let smallFont = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize - 1)
-                for b in [homepageButton, installButton] {
-                    b.isBordered = false
-                    b.bezelStyle = .inline
-                    b.font = smallFont
-                    b.contentTintColor = .tertiaryLabelColor
-                    b.setButtonType(.momentaryChange)
-                    b.focusRingType = .none
-                }
-                if let homeImage = NSImage(systemSymbolName: "house", accessibilityDescription: "Homepage") {
-                    homepageButton.image = homeImage
-                    homepageButton.imagePosition = .imageOnly
-                    homepageButton.title = "" // image only
-                } else {
-                    homepageButton.title = "Home" // fallback
-                }
-                installButton.title = "Install…"
-                installButton.contentTintColor = .secondaryLabelColor
-                buttonStack.orientation = .horizontal
-                buttonStack.alignment = .centerY
-                buttonStack.spacing = 4
-                buttonStack.translatesAutoresizingMaskIntoConstraints = false
-                buttonStack.addArrangedSubview(homepageButton)
-                buttonStack.addArrangedSubview(installButton)
-                addSubview(buttonStack)
-
-                buttonStack.alphaValue = 1 // always visible; border appears on hover
-
-                titleTrailingToButtons = titleField.trailingAnchor.constraint(lessThanOrEqualTo: buttonStack.leadingAnchor, constant: -8)
-                descTrailingToButtons = descField.trailingAnchor.constraint(lessThanOrEqualTo: buttonStack.leadingAnchor, constant: -8)
-                titleTrailingToEdge = titleField.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -6)
-                descTrailingToEdge = descField.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -6)
-                let buttonStackTrailing = buttonStack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -6)
-
-                buttonVisibilityConstraints = [
-                    titleTrailingToButtons,
-                    descTrailingToButtons
-                ]
-
-                buttonHiddenConstraints = [
-                    titleTrailingToEdge,
-                    descTrailingToEdge
-                ]
-
-                NSLayoutConstraint.activate([
-                    titleField.topAnchor.constraint(equalTo: topAnchor, constant: 4),
-                    titleField.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 4),
-
-                    descField.topAnchor.constraint(equalTo: titleField.bottomAnchor, constant: 2),
-                    descField.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 4),
-                    descField.bottomAnchor.constraint(lessThanOrEqualTo: bottomAnchor, constant: -4),
-
-                    buttonStack.centerYAnchor.constraint(equalTo: centerYAnchor),
-                    buttonStackTrailing
-                ])
-
-                setButtonsVisible(false)
-            }
-
-            override func updateTrackingAreas() {
-                super.updateTrackingAreas()
-                for ta in trackingAreas { removeTrackingArea(ta) }
-                let options: NSTrackingArea.Options = [.mouseEnteredAndExited, .inVisibleRect, .activeAlways]
-                let area = NSTrackingArea(rect: bounds, options: options, owner: self, userInfo: nil)
-                addTrackingArea(area)
-                trackingAdded = true
-            }
-            override func mouseEntered(with event: NSEvent) {
-                guard isCask else { return }
-                setButtonBorders(visible: true)
-            }
-            override func mouseExited(with event: NSEvent) {
-                guard isCask else { return }
-                setButtonBorders(visible: false)
-            }
-            private func setButtonBorders(visible: Bool) {
-                for b in [homepageButton, installButton] { b.isBordered = visible }
-            }
-            func configureForInstalled() {
-                isCask = false
-                setButtonsVisible(false)
-                applySingleLineTitle()
-            }
-            func configureForCask(homepageAvailable: Bool, row: Int) {
-                isCask = true
-                setButtonsVisible(true)
-                homepageButton.isHidden = !homepageAvailable
-                installButton.isHidden = false
-                homepageButton.tag = row
-                installButton.tag = row
-                setButtonBorders(visible: false)
-                applySingleLineTitle()
-            }
-
-            func configureForHistory(command: String, display: String?) {
-                isCask = false
-                setButtonsVisible(false)
-                enableMultilineTitle()
-                let title = display?.isEmpty == false ? display! : command
-                titleField.stringValue = title
-                if display?.isEmpty == false && display != command {
-                    titleField.toolTip = "Command: \(command)"
-                } else {
-                    titleField.toolTip = command
-                }
-                descField.stringValue = "Recent command"
-                descField.textColor = NSColor.white.withAlphaComponent(0.55)
-            }
-
-            private func setButtonsVisible(_ visible: Bool) {
-                buttonStack.isHidden = !visible
-
-                if visible {
-                    NSLayoutConstraint.deactivate(buttonHiddenConstraints)
-                    NSLayoutConstraint.activate(buttonVisibilityConstraints)
-                    homepageButton.isHidden = false
-                    installButton.isHidden = false
-                } else {
-                    NSLayoutConstraint.deactivate(buttonVisibilityConstraints)
-                    NSLayoutConstraint.activate(buttonHiddenConstraints)
-                    homepageButton.isHidden = true
-                    installButton.isHidden = true
-                }
-
-                setButtonBorders(visible: false)
-            }
-
-            private func applySingleLineTitle() {
-                titleField.usesSingleLineMode = true
-                titleField.maximumNumberOfLines = 1
-                titleField.lineBreakMode = .byTruncatingTail
-                if let titleCell = titleField.cell as? NSTextFieldCell {
-                    titleCell.wraps = false
-                    titleCell.isScrollable = true
-                    titleCell.lineBreakMode = .byTruncatingTail
-                }
-                titleField.toolTip = nil
-            }
-
-            private func enableMultilineTitle() {
-                titleField.usesSingleLineMode = false
-                titleField.maximumNumberOfLines = 2
-                titleField.lineBreakMode = .byTruncatingMiddle
-                if let titleCell = titleField.cell as? NSTextFieldCell {
-                    titleCell.wraps = true
-                    titleCell.isScrollable = false
-                    titleCell.lineBreakMode = .byTruncatingMiddle
-                }
-            }
-        }
-
-        var cellView = tableView.makeView(withIdentifier: identifier, owner: nil) as? AppCellView
-        if cellView == nil {
-            cellView = AppCellView()
-            cellView?.identifier = identifier
-        }
-
-        guard row < apps.count, let cell = cellView else { return cellView }
-
-        let app = apps[row]
-        let displayName = app.displayName
-
-        switch app {
-        case .installedAppMetadata(_, let path, _, let desc):
-            let title = titleWithDebugScore(displayName, result: app)
-            cell.titleField.stringValue = title
-            cell.titleField.textColor = NSColor.white
-            var secondary: String? = nil
-            if let p = path {
-                secondary = p
-            }
-            if let d = desc, !d.isEmpty {
-                let d1 = d.replacingOccurrences(of: "\n", with: " ")
-                if let existing = secondary {
-                    // Combine path and description
-                    secondary = existing + " — " + d1
-                } else {
-                    secondary = d1
-                }
-            }
-            if let sec = secondary, !sec.isEmpty {
-                cell.descField.stringValue = sec
-                cell.descField.textColor = NSColor.white.withAlphaComponent(0.55)
-                cell.descField.isHidden = false
-            } else {
-                cell.descField.isHidden = true
-            }
-            cell.configureForInstalled()
-        case .availableCask(let cask):
-            var title = displayName + " (install)"
-            title = titleWithDebugScore(title, result: app)
-            cell.titleField.stringValue = title
-            cell.titleField.textColor = NSColor.systemGreen.withAlphaComponent(0.85)
-            if let desc = cask.desc, !desc.isEmpty {
-                let singleLine = desc.replacingOccurrences(of: "\n", with: " ")
-                cell.descField.stringValue = singleLine
-                cell.descField.isHidden = false
-                cell.descField.textColor = NSColor.white.withAlphaComponent(0.55)
-            } else if let homepage = cask.homepage, !homepage.isEmpty {
-                let singleLine = homepage.replacingOccurrences(of: "\n", with: " ")
-                cell.descField.stringValue = singleLine
-                cell.descField.isHidden = false
-                cell.descField.textColor = NSColor.white.withAlphaComponent(0.55)
-            } else {
-                cell.descField.isHidden = true
-            }
-            // Buttons
-            cell.homepageButton.target = self
-            cell.homepageButton.action = #selector(homepageButtonPressed(_:))
-            cell.installButton.target = self
-            cell.installButton.action = #selector(installButtonPressed(_:))
-            cell.configureForCask(homepageAvailable: cask.homepage != nil, row: row)
-        case .historyCommand(let command, let display):
-            cell.titleField.textColor = NSColor.white
-            cell.descField.isHidden = false
-            cell.descField.textColor = NSColor.white.withAlphaComponent(0.55)
-            cell.configureForHistory(command: command, display: display)
-            cell.titleField.stringValue = titleWithDebugScore(cell.titleField.stringValue, result: app)
-        @unknown default:
-            let title = titleWithDebugScore(displayName, result: app)
-            cell.titleField.stringValue = title
-            cell.descField.isHidden = true
-            cell.configureForInstalled()
-        }
-
+        apps[row].configureCell(cell, controller: self, row: row)
         return cell
     }
 
-    // Dynamic row height to accommodate description for uninstalled apps
     func tableView(_ tableView: NSTableView, heightOfRow row: Int) -> CGFloat {
         guard row < apps.count else { return 24 }
-
-        let subtitleHeight: CGFloat = 44
-        let titleOnlyHeight: CGFloat = 40
-
-        switch apps[row] {
-        case .availableCask(let cask):
-            if let desc = cask.desc, !desc.isEmpty { return subtitleHeight }
-            if let homepage = cask.homepage, !homepage.isEmpty { return subtitleHeight }
-            return titleOnlyHeight
-        case .installedAppMetadata(_, let path, _, let desc):
-            if (path != nil) || (desc != nil && !(desc?.isEmpty ?? true)) { return subtitleHeight }
-            return titleOnlyHeight
-        case .historyCommand:
-            return subtitleHeight
-        @unknown default:
-            return titleOnlyHeight
-        }
+        return apps[row].preferredRowHeight
     }
 }
 
@@ -1012,14 +839,7 @@ extension MainViewController: NSTextFieldDelegate {
                 if selectedRow >= 0 && selectedRow < apps.count {
                     let app = apps[selectedRow]
                     let commandText = searchField.stringValue
-                    if launchApplication(app) {
-                        if case .historyCommand = app {
-                            // handled within executeHistoryCommand
-                        } else {
-                            recordSuccessfulRun(command: commandText, displayName: app.displayName)
-                            resetSearchFieldAndResults()
-                        }
-                    }
+                    _ = app.handlePrimaryAction(commandText: commandText, controller: self)
                 }
             }
             return true
@@ -1083,15 +903,8 @@ extension MainViewController: TableViewNavigationDelegate {
         let selectedRow = tableView.selectedRow
         if selectedRow >= 0 && selectedRow < apps.count {
             let app = apps[selectedRow]
-            if launchApplication(app) {
-                if case .historyCommand = app {
-                    // handled within executeHistoryCommand
-                } else {
-                    let commandText = searchField.stringValue
-                    recordSuccessfulRun(command: commandText, displayName: app.displayName)
-                    resetSearchFieldAndResults()
-                }
-            }
+            let commandText = searchField.stringValue
+            _ = app.handlePrimaryAction(commandText: commandText, controller: self)
         }
     }
 }
