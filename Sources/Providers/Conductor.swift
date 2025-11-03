@@ -27,7 +27,7 @@ final class SearchConductor {
             let recents = CommandHistory.shared
                 .recentEntries(limit: emptyQueryHistoryLimit)
                 .map { entry in
-                    SearchResult.historyCommand(command: entry.command, display: entry.display)
+                    SearchResult.historyCommand(command: entry.command, display: entry.display, isRecent: true)
                 }
 #if DEBUG
             debugScoresLock.lock()
@@ -104,7 +104,7 @@ final class SearchConductor {
         mergedHistory.reserveCapacity(history.count)
 
         for entry in history {
-            guard case .historyCommand(_, let display) = entry.result else {
+            guard case .historyCommand(_, let display, _) = entry.result else {
                 mergedHistory.append(entry)
                 continue
             }
@@ -173,7 +173,7 @@ final class SearchConductor {
                 return 5
             }
             return 3
-        case .historyCommand(let command, _):
+        case .historyCommand(let command, _, _):
             if command.lowercased() == query.lowercased {
                 return 4
             }

@@ -428,7 +428,7 @@ class MainViewController: NSViewController {
                    let preferredQuery = self.preferredHistoryQuery?.lowercased(),
                    preferredQuery == searchText.lowercased(),
                    let index = finalResults.firstIndex(where: {
-                       if case .historyCommand(let cmd, _) = $0 {
+                       if case .historyCommand(let cmd, _, _) = $0 {
                            return cmd.lowercased() == preferred
                        }
                        return false
@@ -725,7 +725,7 @@ class MainViewController: NSViewController {
                 self.tableView.reloadData()
 
                 if let historyIndex = results.firstIndex(where: {
-                    if case .historyCommand(let storedCommand, _) = $0 {
+                    if case .historyCommand(let storedCommand, _, _) = $0 {
                         return storedCommand.caseInsensitiveCompare(trimmed) == .orderedSame
                     }
                     return false
@@ -869,7 +869,7 @@ extension MainViewController: NSTextFieldDelegate {
 extension MainViewController: TableViewNavigationDelegate {
     func tableView(_ tableView: NSTableView, shouldDeleteRow row: Int) -> Bool {
         guard row >= 0 && row < apps.count else { return false }
-        guard case .historyCommand(let command, _) = apps[row] else { return false }
+        guard case .historyCommand(let command, _, _) = apps[row] else { return false }
 
         let removed = commandHistory.remove(command: command)
         guard removed else { return false }

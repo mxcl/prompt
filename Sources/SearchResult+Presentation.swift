@@ -43,8 +43,29 @@ extension SearchResult {
                 installSelector: #selector(MainViewController.installButtonPressed(_:))
             )
 
-        case .historyCommand(let command, let display):
-            cell.configureForHistory(command: command, display: display)
+        case .historyCommand(let command, let display, let isRecent):
+            let trimmedCommand = command.trimmingCharacters(in: .whitespacesAndNewlines)
+            let trimmedDisplay = display?.trimmingCharacters(in: .whitespacesAndNewlines)
+            let baseTitle = (trimmedDisplay?.isEmpty == false) ? trimmedDisplay! : trimmedCommand
+            let title = isRecent ? "\(baseTitle) [recent]" : baseTitle
+
+            var subtitle: String?
+            if let trimmedDisplay, !trimmedDisplay.isEmpty {
+                if !trimmedCommand.isEmpty,
+                   trimmedDisplay.caseInsensitiveCompare(trimmedCommand) != .orderedSame {
+                    subtitle = trimmedCommand
+                }
+            } else {
+                subtitle = nil
+            }
+
+            cell.apply(
+                title: title,
+                titleColor: NSColor.white,
+                subtitle: subtitle,
+                tooltip: trimmedCommand.isEmpty ? nil : trimmedCommand
+            )
+            cell.configureForHistory()
             let decorated = decoratedTitle(for: cell.titleField.stringValue)
             cell.titleField.stringValue = decorated
 
@@ -130,7 +151,7 @@ extension SearchResult {
             controller.resetSearchFieldAndResults()
             return true
 
-        case .historyCommand(let command, let display):
+        case .historyCommand(let command, let display, _):
             return controller.executeHistoryCommand(command, display: display)
 
         case .url(let url):

@@ -177,16 +177,10 @@ final class SearchResultCellView: NSTableCellView {
         applySingleLineTitle()
     }
 
-    func configureForHistory(command: String, display: String?) {
+    func configureForHistory() {
         isHoverHighlightEnabled = false
         setButtonsVisible(false)
         enableMultilineTitle()
-        let title = display?.isEmpty == false ? display! : command
-        titleField.stringValue = title
-        titleField.toolTip = command
-        descField.stringValue = "Recent command"
-        descField.textColor = NSColor.white.withAlphaComponent(0.55)
-        descField.isHidden = false
     }
 
     func configureForPlainText() {

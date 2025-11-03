@@ -4,7 +4,7 @@ import Foundation
 enum SearchResult {
     case installedAppMetadata(name: String, path: String?, bundleID: String?, description: String?)
     case availableCask(CaskData.CaskItem)
-    case historyCommand(command: String, display: String?)
+    case historyCommand(command: String, display: String?, isRecent: Bool)
     case url(URL)
     case filesystemEntry(FileSystemEntry)
 
@@ -12,7 +12,7 @@ enum SearchResult {
         switch self {
         case .installedAppMetadata(let name, _, _, _): return name
         case .availableCask(let c): return c.displayName
-        case .historyCommand(let command, let display): return display ?? command
+        case .historyCommand(let command, let display, _): return display ?? command
         case .url(let url): return url.absoluteString
         case .filesystemEntry(let entry): return entry.displayName
         }
@@ -36,7 +36,7 @@ enum SearchResult {
             return displayName.lowercased()
         case .availableCask(let cask):
             return cask.displayName.lowercased()
-        case .historyCommand(let command, _):
+        case .historyCommand(let command, _, _):
             return command.lowercased()
         case .url(let url):
             return url.absoluteString.lowercased()

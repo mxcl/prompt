@@ -13,21 +13,21 @@ final class CommandHistoryProvider: SearchProvider {
         }
 
         let loweredQuery = query.lowercased
-        var candidates: [(entry: CommandHistoryEntry, score: Int)] = []
+        var candidates: [(entry: CommandHistoryEntry, score: Int, isRecent: Bool)] = []
 
         let fuzzy = history.fuzzyMatches(for: query.trimmed, limit: limit)
         if !fuzzy.isEmpty {
             for (index, match) in fuzzy.enumerated() {
                 let recencyBoost = max(0, (limit - index) * 10)
                 let score = baseScore + recencyBoost + match.score
-                candidates.append((match.entry, score))
+                candidates.append((match.entry, score, false))
             }
         } else {
             let recents = history.recentEntries(limit: limit)
             for (index, entry) in recents.enumerated() {
                 let recencyBoost = max(0, (limit - index) * 10)
                 let score = baseScore + recencyBoost
-                candidates.append((entry, score))
+                candidates.append((entry, score, true))
             }
         }
 
@@ -47,7 +47,7 @@ final class CommandHistoryProvider: SearchProvider {
             if lower == loweredQuery {
                 score = max(score, 1000)
             }
-            let result = SearchResult.historyCommand(command: command, display: entry.display)
+            let result = SearchResult.historyCommand(command: command, display: entry.display, isRecent: candidate.isRecent)
             results.append(ProviderResult(source: .commandHistory, result: result, score: score))
         }
 
