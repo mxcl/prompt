@@ -46,17 +46,13 @@ extension SearchResult {
         case .historyCommand(let command, let display, let isRecent):
             let trimmedCommand = command.trimmingCharacters(in: .whitespacesAndNewlines)
             let trimmedDisplay = display?.trimmingCharacters(in: .whitespacesAndNewlines)
-            let baseTitle = (trimmedDisplay?.isEmpty == false) ? trimmedDisplay! : trimmedCommand
-            let title = isRecent ? "\(baseTitle) [recent]" : baseTitle
+            let title = (trimmedDisplay?.isEmpty == false) ? trimmedDisplay! : trimmedCommand
 
             var subtitle: String?
-            if let trimmedDisplay, !trimmedDisplay.isEmpty {
-                if !trimmedCommand.isEmpty,
-                   trimmedDisplay.caseInsensitiveCompare(trimmedCommand) != .orderedSame {
-                    subtitle = trimmedCommand
-                }
-            } else {
-                subtitle = nil
+            if let trimmedDisplay, !trimmedDisplay.isEmpty,
+               !trimmedCommand.isEmpty,
+               trimmedDisplay.caseInsensitiveCompare(trimmedCommand) != .orderedSame {
+                subtitle = trimmedCommand
             }
 
             cell.apply(
@@ -65,7 +61,7 @@ extension SearchResult {
                 subtitle: subtitle,
                 tooltip: trimmedCommand.isEmpty ? nil : trimmedCommand
             )
-            cell.configureForHistory()
+            cell.configureForHistory(isRecent: isRecent)
             let decorated = decoratedTitle(for: cell.titleField.stringValue)
             cell.titleField.stringValue = decorated
 

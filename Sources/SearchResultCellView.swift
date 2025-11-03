@@ -1,5 +1,51 @@
 import Cocoa
 
+private final class PillTagView: NSView {
+    private let label: NSTextField
+    private let horizontalPadding: CGFloat = 8
+    private let verticalPadding: CGFloat = 2
+
+    init(text: String) {
+        label = NSTextField(labelWithString: text)
+        super.init(frame: .zero)
+        wantsLayer = true
+        translatesAutoresizingMaskIntoConstraints = false
+
+        label.font = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize - 1, weight: .semibold)
+        label.textColor = NSColor.white.withAlphaComponent(0.85)
+        label.alignment = .center
+        label.translatesAutoresizingMaskIntoConstraints = false
+
+        addSubview(label)
+
+        NSLayoutConstraint.activate([
+            label.leadingAnchor.constraint(equalTo: leadingAnchor, constant: horizontalPadding),
+            label.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -horizontalPadding),
+            label.topAnchor.constraint(equalTo: topAnchor, constant: verticalPadding),
+            label.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -verticalPadding)
+        ])
+
+        setContentHuggingPriority(.required, for: .horizontal)
+        setContentCompressionResistancePriority(.required, for: .horizontal)
+    }
+
+    required init?(coder: NSCoder) {
+        return nil
+    }
+
+    override var intrinsicContentSize: NSSize {
+        let labelSize = label.intrinsicContentSize
+        return NSSize(width: labelSize.width + horizontalPadding * 2,
+                      height: labelSize.height + verticalPadding * 2)
+    }
+
+    override func layout() {
+        super.layout()
+        layer?.cornerRadius = bounds.height / 2
+        layer?.backgroundColor = NSColor.white.withAlphaComponent(0.14).cgColor
+    }
+}
+
 final class SearchResultCellView: NSTableCellView {
     static let reuseIdentifier = NSUserInterfaceItemIdentifier("SearchResultCell")
 
@@ -8,6 +54,8 @@ final class SearchResultCellView: NSTableCellView {
     let homepageButton = NSButton(title: "Homepage", target: nil, action: nil)
     let installButton = NSButton(title: "Install", target: nil, action: nil)
     private let buttonStack = NSStackView()
+    private let titleStack = NSStackView()
+    private let recentTagView = PillTagView(text: "recent")
 
     private var trackingAdded = false
     private var isHoverHighlightEnabled = false
@@ -39,13 +87,15 @@ final class SearchResultCellView: NSTableCellView {
             textField.backgroundColor = .clear
             textField.translatesAutoresizingMaskIntoConstraints = false
             textField.lineBreakMode = .byTruncatingTail
-            addSubview(textField)
         }
+
+        addSubview(descField)
 
         titleField.font = NSFont.systemFont(ofSize: NSFont.systemFontSize)
         titleField.textColor = NSColor.white.withAlphaComponent(0.92)
         titleField.maximumNumberOfLines = 1
         titleField.usesSingleLineMode = true
+        titleField.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
 
         descField.font = NSFont.systemFont(ofSize: 13)
         descField.textColor = NSColor.white.withAlphaComponent(0.6)
@@ -73,6 +123,15 @@ final class SearchResultCellView: NSTableCellView {
         installButton.title = "Install…"
         installButton.contentTintColor = .secondaryLabelColor
 
+        titleStack.orientation = .horizontal
+        titleStack.alignment = .centerY
+        titleStack.spacing = 6
+        titleStack.translatesAutoresizingMaskIntoConstraints = false
+        titleStack.addArrangedSubview(titleField)
+        titleStack.addArrangedSubview(recentTagView)
+        recentTagView.isHidden = true
+        addSubview(titleStack)
+
         buttonStack.orientation = .horizontal
         buttonStack.alignment = .centerY
         buttonStack.spacing = 4
@@ -83,9 +142,9 @@ final class SearchResultCellView: NSTableCellView {
 
         buttonStack.alphaValue = 1
 
-        titleTrailingToButtons = titleField.trailingAnchor.constraint(lessThanOrEqualTo: buttonStack.leadingAnchor, constant: -8)
+        titleTrailingToButtons = titleStack.trailingAnchor.constraint(lessThanOrEqualTo: buttonStack.leadingAnchor, constant: -8)
         descTrailingToButtons = descField.trailingAnchor.constraint(lessThanOrEqualTo: buttonStack.leadingAnchor, constant: -8)
-        titleTrailingToEdge = titleField.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -6)
+        titleTrailingToEdge = titleStack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -6)
         descTrailingToEdge = descField.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -6)
         let buttonStackTrailing = buttonStack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -6)
 
@@ -100,11 +159,11 @@ final class SearchResultCellView: NSTableCellView {
         ]
 
         NSLayoutConstraint.activate([
-            titleField.topAnchor.constraint(equalTo: topAnchor, constant: 4),
-            titleField.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 4),
+            titleStack.topAnchor.constraint(equalTo: topAnchor, constant: 4),
+            titleStack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 4),
 
-            descField.topAnchor.constraint(equalTo: titleField.bottomAnchor, constant: 2),
-            descField.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 4),
+            descField.topAnchor.constraint(equalTo: titleStack.bottomAnchor, constant: 2),
+            descField.leadingAnchor.constraint(equalTo: titleStack.leadingAnchor),
             descField.bottomAnchor.constraint(lessThanOrEqualTo: bottomAnchor, constant: -4),
 
             buttonStack.centerYAnchor.constraint(equalTo: centerYAnchor),
@@ -160,6 +219,7 @@ final class SearchResultCellView: NSTableCellView {
         isHoverHighlightEnabled = false
         setButtonsVisible(false)
         applySingleLineTitle()
+        recentTagView.isHidden = true
     }
 
     func configureForCask(homepageAvailable: Bool, row: Int, target: AnyObject, homepageSelector: Selector, installSelector: Selector) {
@@ -175,18 +235,21 @@ final class SearchResultCellView: NSTableCellView {
         installButton.action = installSelector
         setButtonBorders(visible: false)
         applySingleLineTitle()
+        recentTagView.isHidden = true
     }
 
-    func configureForHistory() {
+    func configureForHistory(isRecent: Bool) {
         isHoverHighlightEnabled = false
         setButtonsVisible(false)
         enableMultilineTitle()
+        recentTagView.isHidden = !isRecent
     }
 
     func configureForPlainText() {
         isHoverHighlightEnabled = false
         setButtonsVisible(false)
         applySingleLineTitle()
+        recentTagView.isHidden = true
     }
 
     private func setButtonsVisible(_ visible: Bool) {
