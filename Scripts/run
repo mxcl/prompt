@@ -5,7 +5,7 @@
 
 cd "$(dirname "$0")/.."  # Change to project root directory
 
-set -e  # Exit on error
+set -eo pipefail  # Exit on error
 
 # Colors for output
 RED='\033[0;31m'
