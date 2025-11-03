@@ -91,7 +91,7 @@ class MainViewController: NSViewController {
     private let isAutocompleteEnabled = false // Temporary toggle while debugging autocomplete behavior
 
     // MARK: - Button Actions
-    @objc private func homepageButtonPressed(_ sender: NSButton) {
+    @objc func homepageButtonPressed(_ sender: NSButton) {
         let row = sender.tag
         guard row >= 0 && row < apps.count else { return }
         if case .availableCask(let cask) = apps[row], let homepage = cask.homepage, let url = URL(string: homepage) {
@@ -99,7 +99,7 @@ class MainViewController: NSViewController {
         }
     }
 
-    @objc private func installButtonPressed(_ sender: NSButton) {
+    @objc func installButtonPressed(_ sender: NSButton) {
         let row = sender.tag
         guard row >= 0 && row < apps.count else { return }
         if case .availableCask(let cask) = apps[row] {

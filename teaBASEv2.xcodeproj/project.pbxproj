@@ -27,6 +27,8 @@
 		13F8AD798DCE430389F17335 /* CommandHistoryProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D4E20C00EC14B4793D50161 /* CommandHistoryProvider.swift */; };
 		938A1D0CFD994AA68424E402 /* CaskSearchProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72A4F706BC3F42B5BBDD44BC /* CaskSearchProvider.swift */; };
 		A6C666C8C8664BE0853AACB2 /* Conductor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 479A740B3B974E9B96452193 /* Conductor.swift */; };
+		D4FE57E32FC8DCD8009F6AC1 /* SearchResultCellView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4FE57E12FC8DCD8009F6AC1 /* SearchResultCellView.swift */; };
+		D4FE57E42FC8DCD8009F6AC1 /* SearchResult+Presentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4FE57E22FC8DCD8009F6AC1 /* SearchResult+Presentation.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -52,6 +54,8 @@
 		0D4E20C00EC14B4793D50161 /* CommandHistoryProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandHistoryProvider.swift; sourceTree = "<group>"; };
 		72A4F706BC3F42B5BBDD44BC /* CaskSearchProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaskSearchProvider.swift; sourceTree = "<group>"; };
 		479A740B3B974E9B96452193 /* Conductor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Conductor.swift; sourceTree = "<group>"; };
+		D4FE57E12FC8DCD8009F6AC1 /* SearchResultCellView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchResultCellView.swift; sourceTree = "<group>"; };
+		D4FE57E22FC8DCD8009F6AC1 /* SearchResult+Presentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SearchResult+Presentation.swift"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -112,6 +116,8 @@
 				63FA80032F7B1C1000A1B234 /* ShortcutCaptureTextField.swift */,
 				63FA80052F7B1C1000A1B234 /* SettingsViewController.swift */,
 				63FA80072F7B1C1000A1B234 /* SettingsWindowController.swift */,
+				D4FE57E12FC8DCD8009F6AC1 /* SearchResultCellView.swift */,
+				D4FE57E22FC8DCD8009F6AC1 /* SearchResult+Presentation.swift */,
 				63AB603B2BB5DC4800254B65 /* teaBASEv2.entitlements */,
 			);
 			path = Sources;
@@ -249,6 +255,8 @@
 				63FA80042F7B1C1000A1B234 /* ShortcutCaptureTextField.swift in Sources */,
 				63FA80062F7B1C1000A1B234 /* SettingsViewController.swift in Sources */,
 				63FA80082F7B1C1000A1B234 /* SettingsWindowController.swift in Sources */,
+				D4FE57E32FC8DCD8009F6AC1 /* SearchResultCellView.swift in Sources */,
+				D4FE57E42FC8DCD8009F6AC1 /* SearchResult+Presentation.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
