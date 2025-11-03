@@ -983,8 +983,14 @@ extension MainViewController: NSTextFieldDelegate {
         case #selector(NSResponder.moveDown(_:)): // Down arrow
             if apps.count > 0 {
                 view.window?.makeFirstResponder(tableView)
-                tableView.selectRowIndexes(IndexSet(integer: 0), byExtendingSelection: false)
-                tableView.scrollRowToVisible(0)
+                if tableView.selectedRow == -1 {
+                    tableView.selectRowIndexes(IndexSet(integer: 0), byExtendingSelection: false)
+                    tableView.scrollRowToVisible(0)
+                } else if let event = NSApp.currentEvent, event.type == .keyDown {
+                    tableView.keyDown(with: event)
+                } else {
+                    tableView.moveDown(nil)
+                }
             }
             return true
         case #selector(NSResponder.moveUp(_:)): // Up arrow
