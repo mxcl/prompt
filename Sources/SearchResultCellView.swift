@@ -80,6 +80,10 @@ final class SearchResultCellView: NSTableCellView {
     private var descTrailingToEdge: NSLayoutConstraint!
     private var buttonVisibilityConstraints: [NSLayoutConstraint] = []
     private var buttonHiddenConstraints: [NSLayoutConstraint] = []
+    private let baseTitleFont = NSFont.systemFont(ofSize: NSFont.systemFontSize)
+    private let baseDescFont = NSFont.systemFont(ofSize: 13)
+    private lazy var historyTitleFont: NSFont = NSFont.systemFont(ofSize: baseTitleFont.pointSize * 0.85)
+    private lazy var historyDescFont: NSFont = NSFont.systemFont(ofSize: baseDescFont.pointSize * 0.85)
 
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
@@ -105,16 +109,13 @@ final class SearchResultCellView: NSTableCellView {
 
         addSubview(descField)
 
-        let titleFontSize = NSFont.systemFontSize * 0.85
-        let subtitleFontSize = CGFloat(13) * 0.85
-
-        titleField.font = NSFont.systemFont(ofSize: titleFontSize)
+        titleField.font = baseTitleFont
         titleField.textColor = NSColor.white.withAlphaComponent(0.92)
         titleField.maximumNumberOfLines = 1
         titleField.usesSingleLineMode = true
         titleField.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
 
-        descField.font = NSFont.systemFont(ofSize: subtitleFontSize)
+        descField.font = baseDescFont
         descField.textColor = NSColor.white.withAlphaComponent(0.6)
 
         textField = titleField
@@ -235,6 +236,7 @@ final class SearchResultCellView: NSTableCellView {
     func configureForInstalled() {
         isHoverHighlightEnabled = false
         setButtonsVisible(false)
+        applyBaseFonts()
         applySingleLineTitle()
         recentTagView.isHidden = true
     }
@@ -251,6 +253,7 @@ final class SearchResultCellView: NSTableCellView {
         installButton.target = target
         installButton.action = installSelector
         setButtonBorders(visible: false)
+        applyBaseFonts()
         applySingleLineTitle()
         recentTagView.isHidden = true
     }
@@ -258,6 +261,12 @@ final class SearchResultCellView: NSTableCellView {
     func configureForHistory(isRecent: Bool) {
         isHoverHighlightEnabled = false
         setButtonsVisible(false)
+        if isRecent {
+            titleField.font = historyTitleFont
+            descField.font = historyDescFont
+        } else {
+            applyBaseFonts()
+        }
         enableMultilineTitle()
         recentTagView.isHidden = !isRecent
     }
@@ -265,6 +274,7 @@ final class SearchResultCellView: NSTableCellView {
     func configureForPlainText() {
         isHoverHighlightEnabled = false
         setButtonsVisible(false)
+        applyBaseFonts()
         applySingleLineTitle()
         recentTagView.isHidden = true
     }
@@ -314,5 +324,10 @@ final class SearchResultCellView: NSTableCellView {
             titleCell.isScrollable = false
             titleCell.lineBreakMode = .byTruncatingMiddle
         }
+    }
+
+    private func applyBaseFonts() {
+        titleField.font = baseTitleFont
+        descField.font = baseDescFont
     }
 }
