@@ -105,13 +105,16 @@ final class SearchResultCellView: NSTableCellView {
 
         addSubview(descField)
 
-        titleField.font = NSFont.systemFont(ofSize: NSFont.systemFontSize)
+        let titleFontSize = NSFont.systemFontSize * 0.85
+        let subtitleFontSize = CGFloat(13) * 0.85
+
+        titleField.font = NSFont.systemFont(ofSize: titleFontSize)
         titleField.textColor = NSColor.white.withAlphaComponent(0.92)
         titleField.maximumNumberOfLines = 1
         titleField.usesSingleLineMode = true
         titleField.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
 
-        descField.font = NSFont.systemFont(ofSize: 13)
+        descField.font = NSFont.systemFont(ofSize: subtitleFontSize)
         descField.textColor = NSColor.white.withAlphaComponent(0.6)
 
         textField = titleField
@@ -158,9 +161,9 @@ final class SearchResultCellView: NSTableCellView {
 
         titleTrailingToButtons = titleStack.trailingAnchor.constraint(lessThanOrEqualTo: buttonStack.leadingAnchor, constant: -8)
         descTrailingToButtons = descField.trailingAnchor.constraint(lessThanOrEqualTo: buttonStack.leadingAnchor, constant: -8)
-        titleTrailingToEdge = titleStack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -6)
-        descTrailingToEdge = descField.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -6)
-        let buttonStackTrailing = buttonStack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -6)
+        titleTrailingToEdge = titleStack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -4)
+        descTrailingToEdge = descField.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -4)
+        let buttonStackTrailing = buttonStack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -4)
 
         buttonVisibilityConstraints = [
             titleTrailingToButtons,
