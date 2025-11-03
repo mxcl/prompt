@@ -371,6 +371,12 @@ class MainViewController: NSViewController {
         commandHistory.record(command: trimmed, display: displayName, subtitle: subtitle)
     }
 
+    func shouldUseReducedRecentFont(isRecentResult: Bool) -> Bool {
+        guard isRecentResult else { return false }
+        let trimmedQuery = searchField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmedQuery.isEmpty
+    }
+
     func resetSearchFieldAndResults() {
         searchField.stringValue = ""
         lastManualQuery = ""

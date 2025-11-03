@@ -44,7 +44,8 @@ extension SearchResult {
                 subtitle: subtitle,
                 tooltip: trimmedCommand.isEmpty ? nil : trimmedCommand
             )
-            cell.configureForHistory(isRecent: isRecent)
+            let useReducedFonts = controller.shouldUseReducedRecentFont(isRecentResult: isRecent)
+            cell.configureForHistory(isRecent: isRecent, useReducedFonts: useReducedFonts)
             let decorated = decoratedTitle(for: cell.titleField.stringValue)
             cell.titleField.stringValue = decorated
 

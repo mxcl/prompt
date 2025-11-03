@@ -258,10 +258,10 @@ final class SearchResultCellView: NSTableCellView {
         recentTagView.isHidden = true
     }
 
-    func configureForHistory(isRecent: Bool) {
+    func configureForHistory(isRecent: Bool, useReducedFonts: Bool) {
         isHoverHighlightEnabled = false
         setButtonsVisible(false)
-        if isRecent {
+        if useReducedFonts {
             titleField.font = historyTitleFont
             descField.font = historyDescFont
         } else {
