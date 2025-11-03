@@ -5,7 +5,7 @@ private final class PillTagView: NSView {
     private let horizontalPadding: CGFloat = 4
     private let verticalPadding: CGFloat = 3
     private let text: String
-    private let letterSpacing: CGFloat = 1.1
+    private let letterSpacing: CGFloat = 1.05
 
     init(text: String) {
         self.text = text
@@ -14,7 +14,7 @@ private final class PillTagView: NSView {
         wantsLayer = true
         translatesAutoresizingMaskIntoConstraints = false
 
-        label.font = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize - 2, weight: .medium)
+        label.font = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize - 4, weight: .medium)
         label.textColor = NSColor.white.withAlphaComponent(0.7)
         label.alignment = .center
         label.translatesAutoresizingMaskIntoConstraints = false
@@ -82,8 +82,8 @@ final class SearchResultCellView: NSTableCellView {
     private var buttonHiddenConstraints: [NSLayoutConstraint] = []
     private let baseTitleFont = NSFont.systemFont(ofSize: NSFont.systemFontSize)
     private let baseDescFont = NSFont.systemFont(ofSize: 13)
-    private lazy var historyTitleFont: NSFont = NSFont.systemFont(ofSize: baseTitleFont.pointSize * 0.85)
-    private lazy var historyDescFont: NSFont = NSFont.systemFont(ofSize: baseDescFont.pointSize * 0.85)
+    private lazy var historyTitleFont: NSFont = baseTitleFont
+    private lazy var historyDescFont: NSFont = baseDescFont
 
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
