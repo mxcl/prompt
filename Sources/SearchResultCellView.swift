@@ -61,13 +61,16 @@ private final class PillTagView: NSView {
 }
 
 final class SearchResultCellView: NSTableCellView {
+    struct ActionHint {
+        let keyGlyph: String
+        let text: String
+    }
+
     static let reuseIdentifier = NSUserInterfaceItemIdentifier("SearchResultCell")
 
     let titleField = VibrantTextField()
     let descField = VibrantTextField()
     private let actionHintStack = NSStackView()
-    private let enterKeyLabel = NSTextField(labelWithString: "↩︎")
-    private let actionHintLabel = NSTextField(labelWithString: "")
     private let titleStack = NSStackView()
     private let recentTagView = PillTagView(text: "recent")
 
@@ -81,8 +84,8 @@ final class SearchResultCellView: NSTableCellView {
     private let baseDescFont = NSFont.systemFont(ofSize: 13)
     private lazy var historyTitleFont: NSFont = baseTitleFont
     private lazy var historyDescFont: NSFont = baseDescFont
-    private var actionHintText: String?
-    private var actionHintKeyGlyph: String = "↩︎"
+    private var actionHints: [ActionHint] = []
+    private var hintViews: [NSView] = []
 
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
@@ -130,36 +133,10 @@ final class SearchResultCellView: NSTableCellView {
 
         actionHintStack.orientation = .horizontal
         actionHintStack.alignment = .centerY
-        actionHintStack.spacing = 4
+        actionHintStack.spacing = 8
         actionHintStack.translatesAutoresizingMaskIntoConstraints = false
         actionHintStack.isHidden = true
 
-        enterKeyLabel.font = NSFont.monospacedSystemFont(ofSize: NSFont.smallSystemFontSize, weight: .semibold)
-        enterKeyLabel.textColor = NSColor.white.withAlphaComponent(0.75)
-        enterKeyLabel.alignment = .center
-        enterKeyLabel.drawsBackground = true
-        enterKeyLabel.backgroundColor = NSColor.white.withAlphaComponent(0.18)
-        enterKeyLabel.lineBreakMode = .byClipping
-        enterKeyLabel.translatesAutoresizingMaskIntoConstraints = false
-        enterKeyLabel.wantsLayer = true
-        enterKeyLabel.layer?.cornerRadius = 4
-        enterKeyLabel.layer?.masksToBounds = true
-        enterKeyLabel.setContentHuggingPriority(.required, for: .horizontal)
-        enterKeyLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
-        NSLayoutConstraint.activate([
-            enterKeyLabel.widthAnchor.constraint(equalToConstant: 24),
-            enterKeyLabel.heightAnchor.constraint(equalToConstant: 16)
-        ])
-
-        actionHintLabel.font = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize - 1, weight: .medium)
-        actionHintLabel.textColor = NSColor.white.withAlphaComponent(0.7)
-        actionHintLabel.alignment = .left
-        actionHintLabel.translatesAutoresizingMaskIntoConstraints = false
-        actionHintLabel.setContentHuggingPriority(.defaultLow, for: .horizontal)
-        actionHintLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
-
-        actionHintStack.addArrangedSubview(enterKeyLabel)
-        actionHintStack.addArrangedSubview(actionHintLabel)
         addSubview(actionHintStack)
 
         titleTrailingToHint = titleStack.trailingAnchor.constraint(lessThanOrEqualTo: actionHintStack.leadingAnchor, constant: -8)
@@ -190,7 +167,7 @@ final class SearchResultCellView: NSTableCellView {
             hintStackTrailing
         ])
 
-        setActionHint(nil)
+        setActionHints([])
     }
 
     func apply(title: String,
@@ -241,16 +218,16 @@ final class SearchResultCellView: NSTableCellView {
     }
 
     func setActionHint(_ text: String?, keyGlyph: String = "↩︎") {
-        let trimmed = text?.trimmingCharacters(in: .whitespacesAndNewlines)
-        if let trimmed, !trimmed.isEmpty {
-            actionHintText = trimmed
-            actionHintLabel.stringValue = trimmed
-        } else {
-            actionHintText = nil
-            actionHintLabel.stringValue = ""
+        guard let trimmed = text?.trimmingCharacters(in: .whitespacesAndNewlines), !trimmed.isEmpty else {
+            setActionHints([])
+            return
         }
-        actionHintKeyGlyph = keyGlyph
-        enterKeyLabel.stringValue = keyGlyph
+        setActionHints([ActionHint(keyGlyph: keyGlyph, text: trimmed)])
+    }
+
+    func setActionHints(_ hints: [ActionHint]) {
+        actionHints = hints
+        rebuildHintViews()
         updateActionHintVisibility()
     }
 
@@ -260,7 +237,7 @@ final class SearchResultCellView: NSTableCellView {
 
     override func prepareForReuse() {
         super.prepareForReuse()
-        setActionHint(nil)
+        setActionHints([])
     }
 
     override var backgroundStyle: NSView.BackgroundStyle {
@@ -270,7 +247,7 @@ final class SearchResultCellView: NSTableCellView {
     }
 
     private func updateActionHintVisibility() {
-        let shouldShow = isCellSelected() && !(actionHintText?.isEmpty ?? true)
+        let shouldShow = isCellSelected() && !actionHints.isEmpty
         actionHintStack.isHidden = !shouldShow
 
         if shouldShow {
@@ -325,5 +302,52 @@ final class SearchResultCellView: NSTableCellView {
     private func applyBaseFonts() {
         titleField.font = baseTitleFont
         descField.font = baseDescFont
+    }
+
+    private func rebuildHintViews() {
+        hintViews.forEach { view in
+            actionHintStack.removeArrangedSubview(view)
+            view.removeFromSuperview()
+        }
+        hintViews.removeAll()
+
+        for hint in actionHints {
+            let view = makeHintView(for: hint)
+            actionHintStack.addArrangedSubview(view)
+            hintViews.append(view)
+        }
+    }
+
+    private func makeHintView(for hint: ActionHint) -> NSStackView {
+        let keyLabel = NSTextField(labelWithString: hint.keyGlyph)
+        keyLabel.font = NSFont.monospacedSystemFont(ofSize: NSFont.smallSystemFontSize, weight: .semibold)
+        keyLabel.textColor = NSColor.white.withAlphaComponent(0.75)
+        keyLabel.alignment = .center
+        keyLabel.drawsBackground = true
+        keyLabel.backgroundColor = NSColor.white.withAlphaComponent(0.18)
+        keyLabel.lineBreakMode = .byClipping
+        keyLabel.translatesAutoresizingMaskIntoConstraints = false
+        keyLabel.wantsLayer = true
+        keyLabel.layer?.cornerRadius = 4
+        keyLabel.layer?.masksToBounds = true
+        keyLabel.setContentHuggingPriority(.required, for: .horizontal)
+        keyLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
+        NSLayoutConstraint.activate([
+            keyLabel.widthAnchor.constraint(equalToConstant: 28),
+            keyLabel.heightAnchor.constraint(equalToConstant: 16)
+        ])
+
+        let textLabel = NSTextField(labelWithString: hint.text)
+        textLabel.font = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize - 1, weight: .medium)
+        textLabel.textColor = NSColor.white.withAlphaComponent(0.7)
+        textLabel.alignment = .left
+        textLabel.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        textLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
+
+        let stack = NSStackView(views: [keyLabel, textLabel])
+        stack.orientation = .horizontal
+        stack.alignment = .centerY
+        stack.spacing = 4
+        return stack
     }
 }

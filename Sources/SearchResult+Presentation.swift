@@ -2,8 +2,7 @@ import Cocoa
 
 extension SearchResult {
     func configureCell(_ cell: SearchResultCellView, controller: MainViewController) {
-        let actionHint = enterActionHint
-        let hintKeyGlyph = actionHintKeyGlyph
+        let hints = actionHints
 
         switch self {
         case .installedAppMetadata(let name, let path, _, let description):
@@ -65,7 +64,7 @@ extension SearchResult {
             cell.configureForInstalled()
         }
 
-        cell.setActionHint(actionHint, keyGlyph: hintKeyGlyph)
+        cell.setActionHints(hints)
     }
 
     var preferredRowHeight: CGFloat {
@@ -97,7 +96,7 @@ extension SearchResult {
         case .installedAppMetadata:
             return "Open"
         case .availableCask:
-            return "Install & Run"
+            return "Homepage"
         case .historyCommand:
             return "Open"
         case .url:
@@ -109,12 +108,15 @@ extension SearchResult {
         }
     }
 
-    var actionHintKeyGlyph: String {
+    var actionHints: [SearchResultCellView.ActionHint] {
         switch self {
         case .availableCask:
-            return "⌥↩︎"
+            return [
+                SearchResultCellView.ActionHint(keyGlyph: "↩︎", text: "Homepage"),
+                SearchResultCellView.ActionHint(keyGlyph: "⌥↩︎", text: "Install & Run")
+            ]
         default:
-            return "↩︎"
+            return [SearchResultCellView.ActionHint(keyGlyph: "↩︎", text: enterActionHint)]
         }
     }
 
