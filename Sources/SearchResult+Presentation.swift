@@ -209,10 +209,17 @@ extension SearchResult {
             }
             return handlePrimaryAction(commandText: commandText, controller: controller)
         case .availableCask(let cask):
-            guard controller.installCask(cask) else { return false }
-            let subtitle = SearchResult.subtitleForCask(cask)
-            let context = CommandHistoryEntry.Context.availableCask(token: cask.token)
-            controller.recordSuccessfulRun(command: commandText, displayName: displayName, subtitle: subtitle, context: context)
+            guard let context = controller.installCask(cask) else { return false }
+            let subtitle: String?
+            let recordedName: String
+            if case let .installedApp(name, path, _, description, _) = context {
+                subtitle = SearchResult.subtitleForInstalledApp(path: path, description: description)
+                recordedName = name
+            } else {
+                subtitle = SearchResult.subtitleForCask(cask)
+                recordedName = displayName
+            }
+            controller.recordSuccessfulRun(command: commandText, displayName: recordedName, subtitle: subtitle, context: context)
             controller.resetSearchFieldAndResults()
             return true
         case .historyCommand(let command, let display, _, _, _):

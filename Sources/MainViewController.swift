@@ -939,7 +939,7 @@ class MainViewController: NSViewController {
         return NSWorkspace.shared.open(url)
     }
 
-    func installCask(_ cask: CaskData.CaskItem) -> Bool {
+    func installCask(_ cask: CaskData.CaskItem) -> CommandHistoryEntry.Context? {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
         process.arguments = ["brew", "install", "--cask", cask.token]
@@ -950,7 +950,7 @@ class MainViewController: NSViewController {
             #if DEBUG
             print("[Install] Failed to start brew install: \(error)")
             #endif
-            return false
+            return nil
         }
 
         process.waitUntilExit()
@@ -959,14 +959,18 @@ class MainViewController: NSViewController {
             #if DEBUG
             print("[Install] brew failed with status \(process.terminationStatus)")
             #endif
-            return false
+            return nil
         }
 
         guard let appURL = resolveInstalledAppURL(for: cask) else {
-            return false
+            return nil
         }
 
-        return launchApplication(at: appURL)
+        guard launchApplication(at: appURL) else {
+            return nil
+        }
+
+        return installedAppContext(for: cask, installedURL: appURL)
     }
 
     func openCaskBrewPage(_ cask: CaskData.CaskItem) -> Bool {
@@ -1042,6 +1046,33 @@ class MainViewController: NSViewController {
             #endif
             return false
         }
+    }
+
+    private func installedAppContext(for cask: CaskData.CaskItem, installedURL url: URL) -> CommandHistoryEntry.Context {
+        let bundle = Bundle(url: url)
+        let bundleID = bundle?.bundleIdentifier
+        let resolvedName = resolvedInstalledAppName(bundle: bundle, fallbackName: cask.displayName, appURL: url)
+        return .installedApp(
+            name: resolvedName,
+            path: url.path,
+            bundleID: bundleID,
+            description: cask.desc,
+            caskToken: cask.token
+        )
+    }
+
+    private func resolvedInstalledAppName(bundle: Bundle?, fallbackName: String, appURL: URL) -> String {
+        if let displayName = bundle?.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String,
+           !displayName.isEmpty {
+            return displayName
+        }
+        if let bundleName = bundle?.object(forInfoDictionaryKey: "CFBundleName") as? String,
+           !bundleName.isEmpty {
+            return bundleName
+        }
+        return appURL.deletingPathExtension().lastPathComponent.isEmpty
+            ? fallbackName
+            : appURL.deletingPathExtension().lastPathComponent
     }
 
     func executeHistoryCommand(_ command: String, display: String?) -> Bool {
