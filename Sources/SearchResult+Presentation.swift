@@ -40,6 +40,7 @@ extension SearchResult {
         case .historyCommand(let command, let display, let storedSubtitle, _, let isRecent):
             if let contextResult = historyContextResult {
                 contextResult.configureCell(cell, controller: controller)
+                cell.setRecentTagVisible(isRecent)
                 return
             }
             let trimmedCommand = command.trimmingCharacters(in: .whitespacesAndNewlines)

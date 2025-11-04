@@ -265,6 +265,10 @@ final class SearchResultCellView: NSTableCellView {
         recentTagView.isHidden = true
     }
 
+    func setRecentTagVisible(_ isVisible: Bool) {
+        recentTagView.isHidden = !isVisible
+    }
+
     func setActionHint(_ text: String?, keyGlyph: String = "↩︎") {
         guard let trimmed = text?.trimmingCharacters(in: .whitespacesAndNewlines), !trimmed.isEmpty else {
             setActionHints([])
