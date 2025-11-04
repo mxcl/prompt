@@ -3,7 +3,9 @@ import Cocoa
 private enum CommandMenuMetrics {
     static let titleFont = NSFont.systemFont(ofSize: 13, weight: .medium)
     static let subtitleFont = NSFont.systemFont(ofSize: 11)
-    static let horizontalContentPadding: CGFloat = 24
+    private static let structuralPadding: CGFloat = 24
+    private static let extraComfortPadding: CGFloat = 16
+    static let horizontalContentPadding: CGFloat = structuralPadding + extraComfortPadding
 }
 
 struct CommandMenuItem {
@@ -305,11 +307,16 @@ private extension CommandMenuController {
         if let subtitle = item.subtitle, !subtitle.isEmpty {
             contentWidth = max(contentWidth, textWidth(for: subtitle, font: CommandMenuMetrics.subtitleFont))
         }
-        return contentWidth + CommandMenuMetrics.horizontalContentPadding
+        return contentWidth + scrollableHorizontalPadding()
     }
 
     func textWidth(for text: String, font: NSFont) -> CGFloat {
         let attributes: [NSAttributedString.Key: Any] = [.font: font]
         return (text as NSString).size(withAttributes: attributes).width
+    }
+
+    func scrollableHorizontalPadding() -> CGFloat {
+        let scrollerWidth = NSScroller.scrollerWidth(for: .regular, scrollerStyle: scrollView.scrollerStyle)
+        return CommandMenuMetrics.horizontalContentPadding + scrollerWidth
     }
 }
