@@ -476,6 +476,8 @@ class MainViewController: NSViewController {
             tableView.selectRowIndexes(IndexSet(integer: 0), byExtendingSelection: false)
             tableView.scrollRowToVisible(0)
         }
+
+        tableView.refreshVisibleActionHints()
     }
 
     private func urlResult(for input: String) -> SearchResult? {
