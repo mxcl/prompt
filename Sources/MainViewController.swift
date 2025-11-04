@@ -1113,11 +1113,14 @@ extension MainViewController: NSTableViewDelegate {
     func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
         guard row < apps.count else { return nil }
 
+        let result = apps[row]
         let identifier = SearchResultCellView.reuseIdentifier
         let cell = (tableView.makeView(withIdentifier: identifier, owner: self) as? SearchResultCellView) ?? SearchResultCellView()
         cell.identifier = identifier
 
-        apps[row].configureCell(cell, controller: self)
+        let hasMultipleMenuItems = commandMenuItems(for: result).count > 1
+        result.configureCell(cell, controller: self)
+        cell.setShowsCommandMenuHint(hasMultipleMenuItems)
         return cell
     }
 

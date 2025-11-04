@@ -369,6 +369,10 @@ final class SearchResultCellView: NSTableCellView {
         updateActionHintVisibility()
     }
 
+    func setShowsCommandMenuHint(_ shouldShow: Bool) {
+        commandMenuHintView.isHidden = !shouldShow
+    }
+
     func refreshActionHintVisibility() {
         updateActionHintVisibility()
     }
@@ -376,6 +380,7 @@ final class SearchResultCellView: NSTableCellView {
     override func prepareForReuse() {
         super.prepareForReuse()
         setActionHints([])
+        setShowsCommandMenuHint(true)
     }
 
     override var backgroundStyle: NSView.BackgroundStyle {
