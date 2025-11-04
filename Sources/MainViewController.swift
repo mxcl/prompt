@@ -1143,18 +1143,21 @@ extension MainViewController: NSTextFieldDelegate {
         switch commandSelector {
         case #selector(NSResponder.moveDown(_:)): // Down arrow
             if apps.count > 0 {
-                if tableView.selectedRow != 0 {
-                    tableView.scrollRowToVisible(0)
-                    tableView.selectRowIndexes(IndexSet(integer: 0), byExtendingSelection: false)
-                    view.window?.makeFirstResponder(tableView)
+                let lastIndex = apps.count - 1
+                let currentSelection = tableView.selectedRow
+                let nextRow: Int
+
+                if currentSelection < 0 {
+                    nextRow = 0
+                } else if currentSelection == lastIndex {
+                    nextRow = 0
                 } else {
-                    view.window?.makeFirstResponder(tableView)
-                    if let event = NSApp.currentEvent, event.type == .keyDown {
-                        tableView.keyDown(with: event)
-                    } else {
-                        tableView.moveDown(nil)
-                    }
+                    nextRow = currentSelection + 1
                 }
+
+                tableView.selectRowIndexes(IndexSet(integer: nextRow), byExtendingSelection: false)
+                tableView.scrollRowToVisible(nextRow)
+                view.window?.makeFirstResponder(tableView)
             }
             return true
         case #selector(NSResponder.moveUp(_:)): // Up arrow
