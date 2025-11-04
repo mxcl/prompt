@@ -5,6 +5,7 @@ final class CommandHistoryProvider: SearchProvider {
     private let history = CommandHistory.shared
     private let baseScore = 200
     private let limit = 8
+    private let lowRankingPruneWindow = 120 // drop fuzzy matches that trail the leader by more than this delta
 
     func search(query: SearchQuery, generation: UInt64, completion: @escaping ([ProviderResult]) -> Void) {
         guard !query.isEmpty else {
@@ -15,7 +16,7 @@ final class CommandHistoryProvider: SearchProvider {
         let loweredQuery = query.lowercased
         var candidates: [(entry: CommandHistoryEntry, score: Int, isRecent: Bool)] = []
 
-        let fuzzy = history.fuzzyMatches(for: query.trimmed, limit: limit)
+        let fuzzy = filteredFuzzyMatches(for: query.trimmed)
         if !fuzzy.isEmpty {
             for (index, match) in fuzzy.enumerated() {
                 let recencyBoost = max(0, (limit - index) * 10)
@@ -58,5 +59,12 @@ final class CommandHistoryProvider: SearchProvider {
         }
 
         completion(results)
+    }
+
+    private func filteredFuzzyMatches(for query: String) -> [CommandHistoryMatch] {
+        let matches = history.fuzzyMatches(for: query, limit: limit)
+        guard let topScore = matches.first?.score else { return [] }
+        let minimumScore = max(topScore - lowRankingPruneWindow, 0)
+        return matches.filter { $0.score >= minimumScore }
     }
 }
