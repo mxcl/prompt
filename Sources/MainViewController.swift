@@ -133,16 +133,36 @@ class MainViewController: NSViewController {
         let controller = CommandMenuController()
         controller.onDismiss = { [weak self] in
             guard let self else { return }
-            if self.shouldRestoreTableFocusAfterMenu {
+            switch self.commandMenuFocusTarget {
+            case .tableView:
                 self.view.window?.makeFirstResponder(self.tableView)
+            case .searchField:
+                self.view.window?.makeFirstResponder(self.searchField)
+                if let selection = self.searchFieldSelectionBeforeMenu,
+                   let editor = self.view.window?.fieldEditor(true, for: self.searchField) as? NSTextView {
+                    let textLength = (editor.string as NSString).length
+                    let clampedLocation = min(selection.location, textLength)
+                    let clampedLength = min(selection.length, max(0, textLength - clampedLocation))
+                    editor.selectedRange = NSRange(location: clampedLocation, length: clampedLength)
+                }
+            case .none:
+                break
             }
-            self.shouldRestoreTableFocusAfterMenu = false
+            self.commandMenuFocusTarget = .none
+            self.searchFieldSelectionBeforeMenu = nil
             self.commandMenuAnchorRow = nil
         }
         return controller
     }()
     private var commandMenuAnchorRow: Int?
-    private var shouldRestoreTableFocusAfterMenu = false
+    private enum CommandMenuFocusTarget {
+        case none
+        case tableView
+        case searchField
+    }
+
+    private var commandMenuFocusTarget: CommandMenuFocusTarget = .none
+    private var searchFieldSelectionBeforeMenu: NSRange?
 
     override func loadView() {
         let effectView = NSVisualEffectView(frame: NSRect(x: 0, y: 0, width: 600, height: 400))
@@ -455,6 +475,26 @@ class MainViewController: NSViewController {
         return true
     }
 
+    private func handleSearchFieldRightArrow(textView: NSTextView) -> Bool {
+        guard apps.count > 0 else { return false }
+        guard isCursorAtEnd(textView: textView) else { return false }
+        var selectedRow = tableView.selectedRow
+        if selectedRow < 0 {
+            selectedRow = 0
+        }
+        guard selectedRow >= 0 && selectedRow < apps.count else { return false }
+        tableView.selectRowIndexes(IndexSet(integer: selectedRow), byExtendingSelection: false)
+        tableView.scrollRowToVisible(selectedRow)
+        return showCommandMenu(forRow: selectedRow, focusTarget: .searchField)
+    }
+
+    private func isCursorAtEnd(textView: NSTextView) -> Bool {
+        let selection = textView.selectedRange
+        guard selection.length == 0 else { return false }
+        let length = (textView.string as NSString).length
+        return selection.location == length
+    }
+
     private func performSearch(_ searchText: String) {
         let trimmed = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
 
@@ -509,14 +549,21 @@ class MainViewController: NSViewController {
         }
     }
 
-    private func showCommandMenu(forRow row: Int) -> Bool {
+    private func showCommandMenu(forRow row: Int,
+                                 focusTarget: CommandMenuFocusTarget = .tableView) -> Bool {
         guard row >= 0 && row < apps.count else { return false }
         let items = commandMenuItems(for: apps[row])
         guard !items.isEmpty else { return false }
         commandMenuAnchorRow = row
         let anchorRect = commandMenuAnchorRect(forRow: row)
+        commandMenuFocusTarget = focusTarget
+        if focusTarget == .searchField,
+           let editor = view.window?.fieldEditor(true, for: searchField) as? NSTextView {
+            searchFieldSelectionBeforeMenu = editor.selectedRange
+        } else {
+            searchFieldSelectionBeforeMenu = nil
+        }
         commandMenuController.show(relativeTo: anchorRect, of: tableView, items: items)
-        shouldRestoreTableFocusAfterMenu = true
         return true
     }
 
@@ -558,13 +605,14 @@ class MainViewController: NSViewController {
         return menuItems
     }
 
-    private func dismissCommandMenu(restoreFocus: Bool = false) {
+    private func dismissCommandMenu(focusTarget: CommandMenuFocusTarget = .none) {
         guard commandMenuController.isShown else {
-            shouldRestoreTableFocusAfterMenu = false
+            commandMenuFocusTarget = .none
+            searchFieldSelectionBeforeMenu = nil
             commandMenuAnchorRow = nil
             return
         }
-        shouldRestoreTableFocusAfterMenu = restoreFocus
+        commandMenuFocusTarget = focusTarget
         commandMenuController.dismiss()
     }
 
@@ -1012,7 +1060,7 @@ extension MainViewController: NSTableViewDelegate {
     func tableViewSelectionDidChange(_ notification: Notification) {
         guard let tableView = notification.object as? NavigableTableView,
               tableView === self.tableView else { return }
-        dismissCommandMenu(restoreFocus: true)
+        dismissCommandMenu(focusTarget: .tableView)
         tableView.refreshVisibleActionHints()
     }
 }
@@ -1045,6 +1093,11 @@ extension MainViewController: NSTextFieldDelegate {
                 tableView.scrollRowToVisible(lastIndex)
             }
             return true
+        case #selector(NSResponder.moveRight(_:)):
+            if handleSearchFieldRightArrow(textView: textView) {
+                return true
+            }
+            return false
         case #selector(NSResponder.insertNewline(_:)): // Enter key
             let current = searchField.stringValue
             if openURLIfPossible(from: current) {
@@ -1087,7 +1140,7 @@ extension MainViewController: TableViewNavigationDelegate {
     func tableView(_ tableView: NSTableView, shouldDeleteRow row: Int) -> Bool {
         guard row >= 0 && row < apps.count else { return false }
         guard case .historyCommand(let command, _, _, _) = apps[row] else { return false }
-        dismissCommandMenu(restoreFocus: true)
+        dismissCommandMenu(focusTarget: .tableView)
 
         let removed = commandHistory.remove(command: command)
         guard removed else { return false }
@@ -1112,7 +1165,7 @@ extension MainViewController: TableViewNavigationDelegate {
     func tableView(_ tableView: NSTableView, didRequestCommandMenuForRow row: Int) -> Bool {
         guard tableView === self.tableView else { return false }
         if commandMenuController.isShown, commandMenuAnchorRow == row {
-            dismissCommandMenu(restoreFocus: true)
+            dismissCommandMenu(focusTarget: .tableView)
             return true
         }
         return showCommandMenu(forRow: row)
