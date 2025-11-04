@@ -81,7 +81,7 @@ final class CommandMenuController: NSViewController {
             let textStack = NSStackView()
             textStack.orientation = .vertical
             textStack.alignment = .leading
-            textStack.spacing = 1
+            textStack.spacing = 2
             textStack.translatesAutoresizingMaskIntoConstraints = false
 
             titleField.font = CommandMenuMetrics.titleFont
@@ -97,11 +97,17 @@ final class CommandMenuController: NSViewController {
 
             addSubview(textStack)
 
+            let topConstraint = textStack.topAnchor.constraint(greaterThanOrEqualTo: topAnchor, constant: 2)
+            let bottomConstraint = textStack.bottomAnchor.constraint(lessThanOrEqualTo: bottomAnchor, constant: -2)
+            topConstraint.priority = .defaultHigh
+            bottomConstraint.priority = .defaultHigh
+
             NSLayoutConstraint.activate([
                 textStack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 4),
                 textStack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -4),
-                textStack.topAnchor.constraint(equalTo: topAnchor, constant: 2),
-                textStack.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -2)
+                textStack.centerYAnchor.constraint(equalTo: centerYAnchor),
+                topConstraint,
+                bottomConstraint
             ])
         }
 
