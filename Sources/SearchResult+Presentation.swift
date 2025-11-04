@@ -94,17 +94,17 @@ extension SearchResult {
     var enterActionHint: String {
         switch self {
         case .installedAppMetadata:
-            return "open"
+            return "Open"
         case .availableCask:
             return "Homepage"
         case .historyCommand:
-            return "run"
+            return "Open"
         case .url:
-            return "open"
+            return "Open"
         case .filesystemEntry(let entry):
-            return entry.isDirectory ? "Activate" : "open"
+            return entry.isDirectory ? "Activate" : "Open"
         @unknown default:
-            return "open"
+            return "Open"
         }
     }
 
