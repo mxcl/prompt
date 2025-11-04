@@ -597,13 +597,16 @@ class MainViewController: NSViewController {
         if hints.count > 1 {
             let alternateHint = hints[1]
             let alternateSubtitle: String?
+            let alternateSubtitleStyle: CommandMenuItem.SubtitleStyle
             if let context = caskContext,
                alternateHint.text.caseInsensitiveCompare("Install") == .orderedSame {
-                alternateSubtitle = "brew install --cask \(context.cask.token)"
+                alternateSubtitle = "$ brew install --cask \(context.cask.token)"
+                alternateSubtitleStyle = .monospace
             } else {
                 alternateSubtitle = nil
+                alternateSubtitleStyle = .standard
             }
-            menuItems.append(CommandMenuItem(title: alternateHint.text, subtitle: alternateSubtitle, keyGlyph: alternateHint.keyGlyph) { [weak self] in
+            menuItems.append(CommandMenuItem(title: alternateHint.text, subtitle: alternateSubtitle, subtitleStyle: alternateSubtitleStyle, keyGlyph: alternateHint.keyGlyph) { [weak self] in
                 guard let self = self else { return }
                 let commandText = self.searchField.stringValue
                 _ = result.handleAlternateAction(commandText: commandText, controller: self)

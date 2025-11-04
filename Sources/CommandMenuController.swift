@@ -3,20 +3,41 @@ import Cocoa
 private enum CommandMenuMetrics {
     static let titleFont = NSFont.systemFont(ofSize: 13, weight: .medium)
     static let subtitleFont = NSFont.systemFont(ofSize: 11)
+    static let monospaceSubtitleFont = NSFont.monospacedSystemFont(ofSize: 11, weight: .regular)
     private static let structuralPadding: CGFloat = 24
     private static let extraComfortPadding: CGFloat = 16
     static let horizontalContentPadding: CGFloat = structuralPadding + extraComfortPadding
+
+    static func font(for style: CommandMenuItem.SubtitleStyle) -> NSFont {
+        switch style {
+        case .standard:
+            return subtitleFont
+        case .monospace:
+            return monospaceSubtitleFont
+        }
+    }
 }
 
 struct CommandMenuItem {
     let title: String
     let subtitle: String?
+    let subtitleStyle: SubtitleStyle
     let keyGlyph: String?
     let handler: () -> Void
 
-    init(title: String, subtitle: String? = nil, keyGlyph: String?, handler: @escaping () -> Void) {
+    enum SubtitleStyle {
+        case standard
+        case monospace
+    }
+
+    init(title: String,
+         subtitle: String? = nil,
+         subtitleStyle: SubtitleStyle = .standard,
+         keyGlyph: String?,
+         handler: @escaping () -> Void) {
         self.title = title
         self.subtitle = subtitle
+        self.subtitleStyle = subtitleStyle
         self.keyGlyph = keyGlyph
         self.handler = handler
     }
@@ -67,7 +88,6 @@ final class CommandMenuController: NSViewController {
             titleField.textColor = NSColor.white
             titleField.lineBreakMode = .byTruncatingTail
 
-            subtitleField.font = CommandMenuMetrics.subtitleFont
             subtitleField.textColor = NSColor.white.withAlphaComponent(0.7)
             subtitleField.lineBreakMode = .byTruncatingTail
             subtitleField.isHidden = true
@@ -88,6 +108,7 @@ final class CommandMenuController: NSViewController {
         func configure(with item: CommandMenuItem) {
             titleField.stringValue = item.title
             if let subtitle = item.subtitle, !subtitle.isEmpty {
+                subtitleField.font = CommandMenuMetrics.font(for: item.subtitleStyle)
                 subtitleField.stringValue = subtitle
                 subtitleField.isHidden = false
             } else {
@@ -305,7 +326,8 @@ private extension CommandMenuController {
     func rowWidth(for item: CommandMenuItem) -> CGFloat {
         var contentWidth = textWidth(for: item.title, font: CommandMenuMetrics.titleFont)
         if let subtitle = item.subtitle, !subtitle.isEmpty {
-            contentWidth = max(contentWidth, textWidth(for: subtitle, font: CommandMenuMetrics.subtitleFont))
+            let subtitleFont = CommandMenuMetrics.font(for: item.subtitleStyle)
+            contentWidth = max(contentWidth, textWidth(for: subtitle, font: subtitleFont))
         }
         return contentWidth + scrollableHorizontalPadding()
     }
