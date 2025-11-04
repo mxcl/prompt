@@ -654,14 +654,6 @@ class MainViewController: NSViewController {
             })
         }
 
-        if case .installedAppMetadata(_, let path, _, _, _) = result,
-           let path,
-           !path.isEmpty {
-            menuItems.append(CommandMenuItem(title: "Reveal in Finder", subtitle: path, keyGlyph: nil) { [weak self] in
-                self?.revealInFinder(path: path)
-            })
-        }
-
         return menuItems
     }
 
