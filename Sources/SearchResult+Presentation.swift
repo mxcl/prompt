@@ -23,22 +23,23 @@ extension SearchResult {
         case .historyCommand(let command, let display, let storedSubtitle, let isRecent):
             let trimmedCommand = command.trimmingCharacters(in: .whitespacesAndNewlines)
             let trimmedDisplay = display?.trimmingCharacters(in: .whitespacesAndNewlines)
-            let title = (trimmedDisplay?.isEmpty == false) ? trimmedDisplay! : trimmedCommand
+            let titleSource = (trimmedDisplay?.isEmpty == false) ? trimmedDisplay! : trimmedCommand
+            let title = SearchResult.replacingHomeDirectoryPath(in: titleSource)
             let trimmedStoredSubtitle = storedSubtitle?.trimmingCharacters(in: .whitespacesAndNewlines)
             var subtitle: String?
             if let trimmedStoredSubtitle, !trimmedStoredSubtitle.isEmpty {
-                subtitle = trimmedStoredSubtitle
+                subtitle = SearchResult.replacingHomeDirectoryPath(in: trimmedStoredSubtitle)
             } else if let trimmedDisplay, !trimmedDisplay.isEmpty,
                       !trimmedCommand.isEmpty,
                       trimmedDisplay.caseInsensitiveCompare(trimmedCommand) != .orderedSame {
-                subtitle = trimmedCommand
+                subtitle = SearchResult.replacingHomeDirectoryPath(in: trimmedCommand)
             }
 
             cell.apply(
                 title: title,
                 titleColor: NSColor.white,
                 subtitle: subtitle,
-                tooltip: trimmedCommand.isEmpty ? nil : trimmedCommand
+                tooltip: trimmedCommand.isEmpty ? nil : SearchResult.replacingHomeDirectoryPath(in: trimmedCommand)
             )
             let useReducedFonts = controller.shouldUseReducedRecentFont(isRecentResult: isRecent)
             cell.configureForHistory(isRecent: isRecent, useReducedFonts: useReducedFonts)
@@ -186,7 +187,7 @@ extension SearchResult {
 
 extension SearchResult {
     static func subtitleForInstalledApp(path: String?, description: String?) -> String? {
-        let sanitizedPath = sanitizedSubtitleComponent(path)
+        let sanitizedPath = sanitizedSubtitleComponent(path).map { replacingHomeDirectoryPath(in: $0) }
         let sanitizedDescription = sanitizedSubtitleComponent(description)
 
         switch (sanitizedPath, sanitizedDescription) {
@@ -224,5 +225,15 @@ extension SearchResult {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return nil }
         return trimmed.replacingOccurrences(of: "\n", with: " ")
+    }
+
+    private static var homeDirectoryPath: String {
+        FileManager.default.homeDirectoryForCurrentUser.path
+    }
+
+    private static func replacingHomeDirectoryPath(in text: String) -> String {
+        let homePath = homeDirectoryPath
+        guard !homePath.isEmpty else { return text }
+        return text.replacingOccurrences(of: homePath, with: "~")
     }
 }
