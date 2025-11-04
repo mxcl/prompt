@@ -633,13 +633,6 @@ class MainViewController: NSViewController {
             menuItems.append(CommandMenuItem(title: "Homepage", subtitle: context.homepage, keyGlyph: nil) { [weak self] in
                 _ = self?.openCaskHomepage(context.cask)
             })
-
-            if !context.cask.token.isEmpty {
-                let installSubtitle = "$ brew install --cask \(context.cask.token)"
-                menuItems.append(CommandMenuItem(title: "Install", subtitle: installSubtitle, subtitleStyle: .monospace, keyGlyph: nil) { [weak self] in
-                    _ = self?.installCask(context.cask)
-                })
-            }
         }
 
         if let context = caskContext,
@@ -652,7 +645,7 @@ class MainViewController: NSViewController {
         if case .installedAppMetadata(_, let path, _, _, _) = result,
            let path,
            !path.isEmpty {
-            menuItems.append(CommandMenuItem(title: "Show in Finder", keyGlyph: nil) { [weak self] in
+            menuItems.append(CommandMenuItem(title: "Reveal in Finder", keyGlyph: nil) { [weak self] in
                 self?.revealInFinder(path: path)
             })
         }
