@@ -99,8 +99,27 @@ extension SearchResult {
             return cask
         case .availableCask(let cask):
             return cask
+        case .historyCommand:
+            return historyContextResult?.matchedCask
         default:
             return nil
+        }
+    }
+}
+
+extension SearchResult {
+    var historyContextResult: SearchResult? {
+        guard case .historyCommand(_, _, _, let context, _) = self else { return nil }
+        return context?.resolvedSearchResult()
+    }
+}
+
+extension CommandHistoryEntry.Context {
+    func resolvedSearchResult() -> SearchResult? {
+        switch self {
+        case .availableCask(let token):
+            guard let cask = CaskStore.shared.lookup(byNameOrToken: token) else { return nil }
+            return .availableCask(cask)
         }
     }
 }

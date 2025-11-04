@@ -1,22 +1,5 @@
 import Cocoa
 
-private extension SearchResult {
-    var historyContextResult: SearchResult? {
-        guard case .historyCommand(_, _, _, let context, _) = self else { return nil }
-        return context?.resolvedSearchResult()
-    }
-}
-
-private extension CommandHistoryEntry.Context {
-    func resolvedSearchResult() -> SearchResult? {
-        switch self {
-        case .availableCask(let token):
-            guard let cask = CaskStore.shared.lookup(byNameOrToken: token) else { return nil }
-            return .availableCask(cask)
-        }
-    }
-}
-
 extension SearchResult {
     func configureCell(_ cell: SearchResultCellView, controller: MainViewController) {
         let hints = actionHints
