@@ -267,8 +267,7 @@ final class SearchResultCellView: NSTableCellView {
     }
 
     private func updateActionHintVisibility() {
-        let isTableActive = isTableViewFirstResponder()
-        let shouldShow = isTableActive && (backgroundStyle == .emphasized) && !(actionHintText?.isEmpty ?? true)
+        let shouldShow = isCellSelected() && !(actionHintText?.isEmpty ?? true)
         actionHintStack.isHidden = !shouldShow
 
         if shouldShow {
@@ -280,11 +279,6 @@ final class SearchResultCellView: NSTableCellView {
         }
     }
 
-    private func isTableViewFirstResponder() -> Bool {
-        guard let tableView = enclosingTableView() else { return false }
-        return tableView.window?.firstResponder === tableView
-    }
-
     private func enclosingTableView() -> NSTableView? {
         var current: NSView? = superview
         while let view = current {
@@ -294,6 +288,12 @@ final class SearchResultCellView: NSTableCellView {
             current = view.superview
         }
         return nil
+    }
+
+    private func isCellSelected() -> Bool {
+        guard let tableView = enclosingTableView() else { return false }
+        let row = tableView.row(for: self)
+        return row >= 0 && tableView.selectedRowIndexes.contains(row)
     }
 
     private func applySingleLineTitle() {
