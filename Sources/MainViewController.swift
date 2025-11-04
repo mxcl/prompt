@@ -594,6 +594,13 @@ class MainViewController: NSViewController {
             })
         }
 
+        if case .availableCask(let cask) = result,
+           !cask.token.isEmpty {
+            menuItems.append(CommandMenuItem(title: "Open on brew.sh", keyGlyph: nil) { [weak self] in
+                _ = self?.openCaskBrewPage(cask)
+            })
+        }
+
         if case .installedAppMetadata(_, let path, _, _) = result,
            let path,
            !path.isEmpty {
@@ -901,6 +908,19 @@ class MainViewController: NSViewController {
         }
 
         return launchApplication(at: appURL)
+    }
+
+    func openCaskBrewPage(_ cask: CaskData.CaskItem) -> Bool {
+        guard !cask.token.isEmpty else { return false }
+
+        var components = URLComponents()
+        components.scheme = "https"
+        components.host = "formulae.brew.sh"
+        let encodedToken = cask.token.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? cask.token
+        components.path = "/cask/\(encodedToken)"
+
+        guard let url = components.url else { return false }
+        return NSWorkspace.shared.open(url)
     }
 
     private func resolveInstalledAppURL(for cask: CaskData.CaskItem) -> URL? {
