@@ -654,6 +654,18 @@ class MainViewController: NSViewController {
             })
         }
 
+        if let revealPath = result.installedAppPath,
+           !revealPath.isEmpty {
+            let hintContainsReveal = hints.contains {
+                $0.text.caseInsensitiveCompare("Reveal in Finder") == .orderedSame
+            }
+            if !hintContainsReveal {
+                menuItems.append(CommandMenuItem(title: "Reveal in Finder", subtitle: revealPath, keyGlyph: nil) { [weak self] in
+                    self?.revealInFinder(path: revealPath)
+                })
+            }
+        }
+
         return menuItems
     }
 
