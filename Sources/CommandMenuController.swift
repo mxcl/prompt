@@ -108,8 +108,8 @@ final class CommandMenuController: NSViewController {
     private let maxWidth: CGFloat = 520
     private let verticalPadding: CGFloat = 24
     private let maxVisibleItems = 6
-    private let singleLineRowHeight: CGFloat = 32
-    private let doubleLineRowHeight: CGFloat = 48
+    private let singleLineRowHeight: CGFloat = 42
+    private let doubleLineRowHeight: CGFloat = 42
 
     var onDismiss: (() -> Void)?
 
