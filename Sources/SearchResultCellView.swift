@@ -60,6 +60,54 @@ private final class PillTagView: NSView {
     }
 }
 
+private final class KeycapLabel: NSView {
+    private let label: NSTextField
+    private let horizontalPadding: CGFloat = 7
+    private let verticalPadding: CGFloat = 3
+
+    init(text: String) {
+        label = NSTextField(labelWithString: text)
+        super.init(frame: .zero)
+        wantsLayer = true
+        translatesAutoresizingMaskIntoConstraints = false
+
+        label.font = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize - 1, weight: .semibold)
+        label.textColor = NSColor.white.withAlphaComponent(0.8)
+        label.alignment = .center
+        label.translatesAutoresizingMaskIntoConstraints = false
+
+        addSubview(label)
+
+        NSLayoutConstraint.activate([
+            label.leadingAnchor.constraint(equalTo: leadingAnchor, constant: horizontalPadding),
+            label.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -horizontalPadding),
+            label.topAnchor.constraint(equalTo: topAnchor, constant: verticalPadding),
+            label.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -verticalPadding)
+        ])
+
+        setContentHuggingPriority(.required, for: .horizontal)
+        setContentCompressionResistancePriority(.required, for: .horizontal)
+    }
+
+    required init?(coder: NSCoder) {
+        return nil
+    }
+
+    override var intrinsicContentSize: NSSize {
+        let labelSize = label.intrinsicContentSize
+        return NSSize(width: labelSize.width + horizontalPadding * 2,
+                      height: labelSize.height + verticalPadding * 2)
+    }
+
+    override func layout() {
+        super.layout()
+        layer?.cornerRadius = min(6, bounds.height / 2)
+        layer?.backgroundColor = NSColor.white.withAlphaComponent(0.14).cgColor
+        layer?.borderColor = NSColor.white.withAlphaComponent(0.2).cgColor
+        layer?.borderWidth = 0.75
+    }
+}
+
 final class SearchResultCellView: NSTableCellView {
     struct ActionHint {
         let keyGlyph: String
@@ -133,7 +181,7 @@ final class SearchResultCellView: NSTableCellView {
 
         actionHintStack.orientation = .horizontal
         actionHintStack.alignment = .centerY
-        actionHintStack.spacing = 8
+        actionHintStack.spacing = 12
         actionHintStack.translatesAutoresizingMaskIntoConstraints = false
         actionHintStack.isHidden = true
 
@@ -311,37 +359,24 @@ final class SearchResultCellView: NSTableCellView {
         }
         hintViews.removeAll()
 
-        for hint in actionHints {
+        for (index, hint) in actionHints.enumerated() {
             let view = makeHintView(for: hint)
+            if index > 0 {
+                let divider = makeHintDivider()
+                actionHintStack.addArrangedSubview(divider)
+                hintViews.append(divider)
+            }
             actionHintStack.addArrangedSubview(view)
             hintViews.append(view)
         }
     }
 
     private func makeHintView(for hint: ActionHint) -> NSStackView {
-        let keyLabel = NSTextField(labelWithString: hint.keyGlyph)
-        keyLabel.font = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize - 1, weight: .semibold)
-        keyLabel.textColor = NSColor.white.withAlphaComponent(0.75)
-        keyLabel.alignment = .center
-        keyLabel.drawsBackground = true
-        keyLabel.backgroundColor = NSColor.white.withAlphaComponent(0.18)
-        keyLabel.lineBreakMode = .byClipping
-        keyLabel.translatesAutoresizingMaskIntoConstraints = false
-        keyLabel.wantsLayer = true
-        keyLabel.layer?.cornerRadius = 4
-        keyLabel.layer?.masksToBounds = true
-        keyLabel.setContentHuggingPriority(.required, for: .horizontal)
-        keyLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
-        let widthConstraint = keyLabel.widthAnchor.constraint(greaterThanOrEqualToConstant: 24)
-        widthConstraint.priority = .defaultHigh
-        NSLayoutConstraint.activate([
-            widthConstraint,
-            keyLabel.heightAnchor.constraint(equalToConstant: 18)
-        ])
+        let keyLabel = KeycapLabel(text: hint.keyGlyph)
 
         let textLabel = NSTextField(labelWithString: hint.text)
-        textLabel.font = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize - 1, weight: .medium)
-        textLabel.textColor = NSColor.white.withAlphaComponent(0.7)
+        textLabel.font = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize, weight: .medium)
+        textLabel.textColor = NSColor.white.withAlphaComponent(0.8)
         textLabel.alignment = .left
         textLabel.setContentHuggingPriority(.defaultLow, for: .horizontal)
         textLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
@@ -349,7 +384,19 @@ final class SearchResultCellView: NSTableCellView {
         let stack = NSStackView(views: [keyLabel, textLabel])
         stack.orientation = .horizontal
         stack.alignment = .centerY
-        stack.spacing = 4
+        stack.spacing = 6
         return stack
+    }
+
+    private func makeHintDivider() -> NSView {
+        let divider = NSView()
+        divider.translatesAutoresizingMaskIntoConstraints = false
+        divider.wantsLayer = true
+        divider.layer?.backgroundColor = NSColor.white.withAlphaComponent(0.18).cgColor
+        NSLayoutConstraint.activate([
+            divider.widthAnchor.constraint(equalToConstant: 1),
+            divider.heightAnchor.constraint(equalToConstant: 18)
+        ])
+        return divider
     }
 }
