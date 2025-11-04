@@ -3,6 +3,7 @@ import Cocoa
 extension SearchResult {
     func configureCell(_ cell: SearchResultCellView, controller: MainViewController) {
         let actionHint = enterActionHint
+        let hintKeyGlyph = actionHintKeyGlyph
 
         switch self {
         case .installedAppMetadata(let name, let path, _, let description):
@@ -64,7 +65,7 @@ extension SearchResult {
             cell.configureForInstalled()
         }
 
-        cell.setActionHint(actionHint)
+        cell.setActionHint(actionHint, keyGlyph: hintKeyGlyph)
     }
 
     var preferredRowHeight: CGFloat {
@@ -96,7 +97,7 @@ extension SearchResult {
         case .installedAppMetadata:
             return "Open"
         case .availableCask:
-            return "Homepage"
+            return "Install & Run"
         case .historyCommand:
             return "Open"
         case .url:
@@ -105,6 +106,15 @@ extension SearchResult {
             return entry.isDirectory ? "Activate" : "Open"
         @unknown default:
             return "Open"
+        }
+    }
+
+    var actionHintKeyGlyph: String {
+        switch self {
+        case .availableCask:
+            return "⌥↩︎"
+        default:
+            return "↩︎"
         }
     }
 
@@ -128,7 +138,7 @@ extension SearchResult {
             return true
 
         case .availableCask(let cask):
-            guard controller.installCask(cask) else { return false }
+            guard controller.openCaskHomepage(cask) else { return false }
             let subtitle = SearchResult.subtitleForCask(cask)
             controller.recordSuccessfulRun(command: commandText, displayName: displayName, subtitle: subtitle)
             controller.resetSearchFieldAndResults()
@@ -154,6 +164,20 @@ extension SearchResult {
 
         @unknown default:
             return false
+        }
+    }
+
+    @discardableResult
+    func handleAlternateAction(commandText: String, controller: MainViewController) -> Bool {
+        switch self {
+        case .availableCask(let cask):
+            guard controller.installCask(cask) else { return false }
+            let subtitle = SearchResult.subtitleForCask(cask)
+            controller.recordSuccessfulRun(command: commandText, displayName: displayName, subtitle: subtitle)
+            controller.resetSearchFieldAndResults()
+            return true
+        default:
+            return handlePrimaryAction(commandText: commandText, controller: controller)
         }
     }
 }

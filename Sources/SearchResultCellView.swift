@@ -82,6 +82,7 @@ final class SearchResultCellView: NSTableCellView {
     private lazy var historyTitleFont: NSFont = baseTitleFont
     private lazy var historyDescFont: NSFont = baseDescFont
     private var actionHintText: String?
+    private var actionHintKeyGlyph: String = "↩︎"
 
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
@@ -239,7 +240,7 @@ final class SearchResultCellView: NSTableCellView {
         recentTagView.isHidden = true
     }
 
-    func setActionHint(_ text: String?) {
+    func setActionHint(_ text: String?, keyGlyph: String = "↩︎") {
         let trimmed = text?.trimmingCharacters(in: .whitespacesAndNewlines)
         if let trimmed, !trimmed.isEmpty {
             actionHintText = trimmed
@@ -248,6 +249,8 @@ final class SearchResultCellView: NSTableCellView {
             actionHintText = nil
             actionHintLabel.stringValue = ""
         }
+        actionHintKeyGlyph = keyGlyph
+        enterKeyLabel.stringValue = keyGlyph
         updateActionHintVisibility()
     }
 

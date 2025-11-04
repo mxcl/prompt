@@ -33,6 +33,7 @@ class NavigableTableView: NSTableView {
     }
 
     override func keyDown(with event: NSEvent) {
+        let modifiers = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
         switch event.keyCode {
         case 126: // Up arrow
             let selectedRow = self.selectedRow
@@ -75,11 +76,14 @@ class NavigableTableView: NSTableView {
             return
         case 36: // Enter/Return key
             if self.selectedRow >= 0 {
-                navigationDelegate?.tableViewShouldLaunchSelectedApp(self)
+                if modifiers.contains(.option) {
+                    navigationDelegate?.tableViewShouldPerformAlternateAction(self)
+                } else {
+                    navigationDelegate?.tableViewShouldLaunchSelectedApp(self)
+                }
                 return
             }
         default:
-            let modifiers = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
             let navigationModifiers: NSEvent.ModifierFlags = [.command, .control, .option, .function]
             if modifiers.isDisjoint(with: navigationModifiers) {
                 navigationDelegate?.tableViewShouldReturnToSearchField(self)
@@ -101,6 +105,7 @@ protocol TableViewNavigationDelegate: AnyObject {
     func tableViewShouldReturnToSearchField(_ tableView: NSTableView)
     func tableViewShouldLaunchSelectedApp(_ tableView: NSTableView)
     func tableView(_ tableView: NSTableView, shouldDeleteRow row: Int) -> Bool
+    func tableViewShouldPerformAlternateAction(_ tableView: NSTableView)
 }
 
 class MainViewController: NSViewController {
@@ -719,13 +724,99 @@ class MainViewController: NSViewController {
         return false
     }
 
-    func installCask(_ cask: CaskData.CaskItem) -> Bool {
-        // For now, just open the homepage or show info
-        // You could implement actual Homebrew installation here
-        if let homepage = cask.homepage, let url = URL(string: homepage) {
-            return NSWorkspace.shared.open(url)
+    func openCaskHomepage(_ cask: CaskData.CaskItem) -> Bool {
+        guard let homepage = cask.homepage, let url = URL(string: homepage) else {
+            return false
         }
-        return false
+        return NSWorkspace.shared.open(url)
+    }
+
+    func installCask(_ cask: CaskData.CaskItem) -> Bool {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+        process.arguments = ["brew", "install", "--cask", cask.token]
+
+        do {
+            try process.run()
+        } catch {
+            #if DEBUG
+            print("[Install] Failed to start brew install: \(error)")
+            #endif
+            return false
+        }
+
+        process.waitUntilExit()
+
+        guard process.terminationStatus == 0 else {
+            #if DEBUG
+            print("[Install] brew failed with status \(process.terminationStatus)")
+            #endif
+            return false
+        }
+
+        guard let appURL = resolveInstalledAppURL(for: cask) else {
+            return false
+        }
+
+        return launchApplication(at: appURL)
+    }
+
+    private func resolveInstalledAppURL(for cask: CaskData.CaskItem) -> URL? {
+        var candidateNames = cask.appNames
+        if candidateNames.isEmpty {
+            candidateNames.append(contentsOf: inferredAppNames(from: cask))
+        }
+
+        guard !candidateNames.isEmpty else { return nil }
+
+        let homeApplicationsPath = (NSHomeDirectory() as NSString).appendingPathComponent("Applications")
+        let searchDirectories: [URL] = [
+            URL(fileURLWithPath: "/Applications", isDirectory: true),
+            URL(fileURLWithPath: homeApplicationsPath, isDirectory: true)
+        ]
+
+        let fileManager = FileManager.default
+        for name in candidateNames {
+            for directory in searchDirectories {
+                let appURL = directory.appendingPathComponent(name, isDirectory: true)
+                if fileManager.fileExists(atPath: appURL.path) {
+                    return appURL
+                }
+            }
+        }
+        return nil
+    }
+
+    private func inferredAppNames(from cask: CaskData.CaskItem) -> [String] {
+        var names: [String] = []
+        let display = cask.displayName
+        if display.lowercased().hasSuffix(".app") {
+            names.append(display)
+        } else {
+            names.append(display + ".app")
+        }
+
+        if !cask.token.isEmpty {
+            if cask.token.lowercased().hasSuffix(".app") {
+                names.append(cask.token)
+            } else {
+                names.append(cask.token + ".app")
+            }
+        }
+
+        return names
+    }
+
+    private func launchApplication(at url: URL) -> Bool {
+        do {
+            try NSWorkspace.shared.launchApplication(at: url, options: [.default], configuration: [:])
+            return true
+        } catch {
+            #if DEBUG
+            print("[Install] Failed to launch app at \(url.path): \(error)")
+            #endif
+            return false
+        }
     }
 
     func executeHistoryCommand(_ command: String, display: String?) -> Bool {
@@ -937,5 +1028,13 @@ extension MainViewController: TableViewNavigationDelegate {
             let commandText = searchField.stringValue
             _ = app.handlePrimaryAction(commandText: commandText, controller: self)
         }
+    }
+
+    func tableViewShouldPerformAlternateAction(_ tableView: NSTableView) {
+        let selectedRow = tableView.selectedRow
+        guard selectedRow >= 0 && selectedRow < apps.count else { return }
+        let app = apps[selectedRow]
+        let commandText = searchField.stringValue
+        _ = app.handleAlternateAction(commandText: commandText, controller: self)
     }
 }
