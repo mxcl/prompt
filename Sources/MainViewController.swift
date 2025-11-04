@@ -90,6 +90,12 @@ class NavigableTableView: NSTableView {
                 return
             }
         default:
+            if modifiers.contains(.command),
+               let characters = event.charactersIgnoringModifiers?.lowercased(),
+               characters == "a" {
+                navigationDelegate?.tableViewShouldSelectAllText(self)
+                return
+            }
             let navigationModifiers: NSEvent.ModifierFlags = [.command, .control, .option, .function]
             if modifiers.isDisjoint(with: navigationModifiers) {
                 navigationDelegate?.tableViewShouldReturnToSearchField(self)
@@ -624,7 +630,7 @@ class MainViewController: NSViewController {
 
         if let context = caskContext,
            !context.cask.token.isEmpty {
-            menuItems.append(CommandMenuItem(title: "Open on brew.sh", subtitle: context.brewURL, keyGlyph: nil) { [weak self] in
+            menuItems.append(CommandMenuItem(title: "Homebrew Webpage", subtitle: context.brewURL, keyGlyph: nil) { [weak self] in
                 _ = self?.openCaskBrewPage(context.cask)
             })
         }
