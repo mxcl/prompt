@@ -48,6 +48,12 @@ class NavigableTableView: NSTableView {
                 navigationDelegate?.tableViewShouldReturnToSearchField(self)
                 return
             }
+        case 124: // Right arrow
+            let row = self.selectedRow
+            if row >= 0,
+               navigationDelegate?.tableView(self, didRequestCommandMenuForRow: row) == true {
+                return
+            }
         case 51: // Delete / backspace
             let row = self.selectedRow
             if row >= 0,
@@ -106,6 +112,7 @@ protocol TableViewNavigationDelegate: AnyObject {
     func tableViewShouldLaunchSelectedApp(_ tableView: NSTableView)
     func tableView(_ tableView: NSTableView, shouldDeleteRow row: Int) -> Bool
     func tableViewShouldPerformAlternateAction(_ tableView: NSTableView)
+    func tableView(_ tableView: NSTableView, didRequestCommandMenuForRow row: Int) -> Bool
 }
 
 class MainViewController: NSViewController {
@@ -122,6 +129,20 @@ class MainViewController: NSViewController {
     private var suppressNextManualUpdate = false
     private var preferredHistoryQuery: String?
     private let isAutocompleteEnabled = false // Temporary toggle while debugging autocomplete behavior
+    private lazy var commandMenuController: CommandMenuController = {
+        let controller = CommandMenuController()
+        controller.onDismiss = { [weak self] in
+            guard let self else { return }
+            if self.shouldRestoreTableFocusAfterMenu {
+                self.view.window?.makeFirstResponder(self.tableView)
+            }
+            self.shouldRestoreTableFocusAfterMenu = false
+            self.commandMenuAnchorRow = nil
+        }
+        return controller
+    }()
+    private var commandMenuAnchorRow: Int?
+    private var shouldRestoreTableFocusAfterMenu = false
 
     override func loadView() {
         let effectView = NSVisualEffectView(frame: NSRect(x: 0, y: 0, width: 600, height: 400))
@@ -472,6 +493,7 @@ class MainViewController: NSViewController {
     }
 
     private func applyResults(_ results: [SearchResult]) {
+        dismissCommandMenu()
         apps = results
         tableView.reloadData()
 
@@ -485,6 +507,78 @@ class MainViewController: NSViewController {
         DispatchQueue.main.async { [weak self] in
             self?.tableView.refreshVisibleActionHints()
         }
+    }
+
+    private func showCommandMenu(forRow row: Int) -> Bool {
+        guard row >= 0 && row < apps.count else { return false }
+        let items = commandMenuItems(for: apps[row])
+        guard !items.isEmpty else { return false }
+        commandMenuAnchorRow = row
+        let anchorRect = commandMenuAnchorRect(forRow: row)
+        commandMenuController.show(relativeTo: anchorRect, of: tableView, items: items)
+        shouldRestoreTableFocusAfterMenu = true
+        return true
+    }
+
+    private func commandMenuItems(for result: SearchResult) -> [CommandMenuItem] {
+        var menuItems: [CommandMenuItem] = []
+        let hints = result.actionHints
+
+        if let primaryHint = hints.first {
+            menuItems.append(CommandMenuItem(title: primaryHint.text, keyGlyph: primaryHint.keyGlyph) { [weak self] in
+                guard let self = self else { return }
+                let commandText = self.searchField.stringValue
+                _ = result.handlePrimaryAction(commandText: commandText, controller: self)
+            })
+        } else {
+            menuItems.append(CommandMenuItem(title: result.enterActionHint, keyGlyph: "⏎") { [weak self] in
+                guard let self = self else { return }
+                let commandText = self.searchField.stringValue
+                _ = result.handlePrimaryAction(commandText: commandText, controller: self)
+            })
+        }
+
+        if hints.count > 1 {
+            let alternateHint = hints[1]
+            menuItems.append(CommandMenuItem(title: alternateHint.text, keyGlyph: alternateHint.keyGlyph) { [weak self] in
+                guard let self = self else { return }
+                let commandText = self.searchField.stringValue
+                _ = result.handleAlternateAction(commandText: commandText, controller: self)
+            })
+        }
+
+        if case .installedAppMetadata(_, let path, _, _) = result,
+           let path,
+           !path.isEmpty {
+            menuItems.append(CommandMenuItem(title: "Show in Finder", keyGlyph: nil) { [weak self] in
+                self?.revealInFinder(path: path)
+            })
+        }
+
+        return menuItems
+    }
+
+    private func dismissCommandMenu(restoreFocus: Bool = false) {
+        guard commandMenuController.isShown else {
+            shouldRestoreTableFocusAfterMenu = false
+            commandMenuAnchorRow = nil
+            return
+        }
+        shouldRestoreTableFocusAfterMenu = restoreFocus
+        commandMenuController.dismiss()
+    }
+
+    private func commandMenuAnchorRect(forRow row: Int) -> NSRect {
+        var rect = tableView.rect(ofRow: row)
+        let width = min(rect.width, 32)
+        rect.origin.x = rect.maxX - width
+        rect.size.width = width
+        return rect
+    }
+
+    private func revealInFinder(path: String) {
+        let url = URL(fileURLWithPath: path)
+        NSWorkspace.shared.activateFileViewerSelecting([url])
     }
 
     private func urlResult(for input: String) -> SearchResult? {
@@ -918,6 +1012,7 @@ extension MainViewController: NSTableViewDelegate {
     func tableViewSelectionDidChange(_ notification: Notification) {
         guard let tableView = notification.object as? NavigableTableView,
               tableView === self.tableView else { return }
+        dismissCommandMenu(restoreFocus: true)
         tableView.refreshVisibleActionHints()
     }
 }
@@ -992,6 +1087,7 @@ extension MainViewController: TableViewNavigationDelegate {
     func tableView(_ tableView: NSTableView, shouldDeleteRow row: Int) -> Bool {
         guard row >= 0 && row < apps.count else { return false }
         guard case .historyCommand(let command, _, _, _) = apps[row] else { return false }
+        dismissCommandMenu(restoreFocus: true)
 
         let removed = commandHistory.remove(command: command)
         guard removed else { return false }
@@ -1013,7 +1109,17 @@ extension MainViewController: TableViewNavigationDelegate {
         return true
     }
 
+    func tableView(_ tableView: NSTableView, didRequestCommandMenuForRow row: Int) -> Bool {
+        guard tableView === self.tableView else { return false }
+        if commandMenuController.isShown, commandMenuAnchorRow == row {
+            dismissCommandMenu(restoreFocus: true)
+            return true
+        }
+        return showCommandMenu(forRow: row)
+    }
+
     func tableViewShouldReturnToSearchField(_ tableView: NSTableView) {
+        dismissCommandMenu()
         view.window?.makeFirstResponder(searchField)
         // Position cursor at end of text
         if let fieldEditor = view.window?.fieldEditor(true, for: searchField) as? NSTextView {
@@ -1022,6 +1128,7 @@ extension MainViewController: TableViewNavigationDelegate {
     }
 
     func tableViewShouldLaunchSelectedApp(_ tableView: NSTableView) {
+        dismissCommandMenu()
         let selectedRow = tableView.selectedRow
         if selectedRow >= 0 && selectedRow < apps.count {
             let app = apps[selectedRow]
@@ -1031,6 +1138,7 @@ extension MainViewController: TableViewNavigationDelegate {
     }
 
     func tableViewShouldPerformAlternateAction(_ tableView: NSTableView) {
+        dismissCommandMenu()
         let selectedRow = tableView.selectedRow
         guard selectedRow >= 0 && selectedRow < apps.count else { return }
         let app = apps[selectedRow]
