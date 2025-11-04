@@ -101,6 +101,14 @@ class NavigableTableView: NSTableView {
         }
         super.keyDown(with: event)
     }
+
+    override func selectAll(_ sender: Any?) {
+        if let delegate = navigationDelegate {
+            delegate.tableViewShouldSelectAllText(self)
+        } else {
+            super.selectAll(sender)
+        }
+    }
 }
 
 class VibrantTextField: NSTextField {
@@ -113,6 +121,7 @@ protocol TableViewNavigationDelegate: AnyObject {
     func tableView(_ tableView: NSTableView, shouldDeleteRow row: Int) -> Bool
     func tableViewShouldPerformAlternateAction(_ tableView: NSTableView)
     func tableView(_ tableView: NSTableView, didRequestCommandMenuForRow row: Int) -> Bool
+    func tableViewShouldSelectAllText(_ tableView: NSTableView)
 }
 
 class MainViewController: NSViewController {
@@ -1240,5 +1249,10 @@ extension MainViewController: TableViewNavigationDelegate {
         let app = apps[selectedRow]
         let commandText = searchField.stringValue
         _ = app.handleAlternateAction(commandText: commandText, controller: self)
+    }
+
+    func tableViewShouldSelectAllText(_ tableView: NSTableView) {
+        dismissCommandMenu()
+        focusAndSelectSearchField()
     }
 }
