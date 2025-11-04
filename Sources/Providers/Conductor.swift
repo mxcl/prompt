@@ -82,7 +82,7 @@ final class SearchConductor {
 
         for result in results {
             switch result.result {
-            case .installedAppMetadata(_, let path, _, _):
+            case .installedAppMetadata(_, let path, _, _, _):
                 if let path {
                     let filename = URL(fileURLWithPath: path).lastPathComponent.lowercased()
                     installedFilenames.insert(filename)
@@ -174,7 +174,7 @@ final class SearchConductor {
 
     private func priority(for result: ProviderResult, query: SearchQuery) -> Int {
         switch result.result {
-        case .installedAppMetadata(let name, _, _, _):
+        case .installedAppMetadata(let name, _, _, _, _):
             if name.lowercased() == query.lowercased {
                 return 5
             }

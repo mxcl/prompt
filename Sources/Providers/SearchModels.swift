@@ -2,7 +2,7 @@ import Foundation
 
 /// Unified search result types produced by providers and re-ranked by the conductor.
 enum SearchResult {
-    case installedAppMetadata(name: String, path: String?, bundleID: String?, description: String?)
+    case installedAppMetadata(name: String, path: String?, bundleID: String?, description: String?, cask: CaskData.CaskItem?)
     case availableCask(CaskData.CaskItem)
     case historyCommand(command: String, display: String?, subtitle: String?, context: CommandHistoryEntry.Context?, isRecent: Bool)
     case url(URL)
@@ -10,7 +10,7 @@ enum SearchResult {
 
     var displayName: String {
         switch self {
-        case .installedAppMetadata(let name, _, _, _): return name
+        case .installedAppMetadata(let name, _, _, _, _): return name
         case .availableCask(let c): return c.displayName
         case .historyCommand(let command, let display, _, _, _): return display ?? command
         case .url(let url): return url.absoluteString
@@ -30,7 +30,7 @@ enum SearchResult {
 
     var identifierHash: String {
         switch self {
-        case .installedAppMetadata(_, let path, let bundleID, _):
+        case .installedAppMetadata(_, let path, let bundleID, _, _):
             if let bundleID = bundleID, !bundleID.isEmpty { return bundleID.lowercased() }
             if let path = path, !path.isEmpty { return path.lowercased() }
             return displayName.lowercased()
@@ -90,4 +90,17 @@ struct ProviderResult {
     let source: SearchSource
     let result: SearchResult
     let score: Int
+}
+
+extension SearchResult {
+    var matchedCask: CaskData.CaskItem? {
+        switch self {
+        case .installedAppMetadata(_, _, _, _, let cask):
+            return cask
+        case .availableCask(let cask):
+            return cask
+        default:
+            return nil
+        }
+    }
 }

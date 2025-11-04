@@ -587,7 +587,7 @@ class MainViewController: NSViewController {
         let hints = result.actionHints
 
         let caskContext: (cask: CaskData.CaskItem, homepage: String?, brewURL: String?)?
-        if case .availableCask(let cask) = result {
+        if let cask = result.matchedCask {
             let homepage = SearchResult.sanitizedSubtitleComponent(cask.homepage)
             let brewURL = caskBrewPageURL(for: cask)?.absoluteString
             caskContext = (cask, homepage, brewURL)
@@ -628,6 +628,20 @@ class MainViewController: NSViewController {
             })
         }
 
+        if result.isInstalled,
+           let context = caskContext {
+            menuItems.append(CommandMenuItem(title: "Homepage", subtitle: context.homepage, keyGlyph: nil) { [weak self] in
+                _ = self?.openCaskHomepage(context.cask)
+            })
+
+            if !context.cask.token.isEmpty {
+                let installSubtitle = "$ brew install --cask \(context.cask.token)"
+                menuItems.append(CommandMenuItem(title: "Install", subtitle: installSubtitle, subtitleStyle: .monospace, keyGlyph: nil) { [weak self] in
+                    _ = self?.installCask(context.cask)
+                })
+            }
+        }
+
         if let context = caskContext,
            !context.cask.token.isEmpty {
             menuItems.append(CommandMenuItem(title: "Homebrew Webpage", subtitle: context.brewURL, keyGlyph: nil) { [weak self] in
@@ -635,7 +649,7 @@ class MainViewController: NSViewController {
             })
         }
 
-        if case .installedAppMetadata(_, let path, _, _) = result,
+        if case .installedAppMetadata(_, let path, _, _, _) = result,
            let path,
            !path.isEmpty {
             menuItems.append(CommandMenuItem(title: "Show in Finder", keyGlyph: nil) { [weak self] in

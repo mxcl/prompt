@@ -22,7 +22,7 @@ extension SearchResult {
         let hints = actionHints
 
         switch self {
-        case .installedAppMetadata(let name, let path, _, let description):
+        case .installedAppMetadata(let name, let path, _, let description, _):
             let title = decoratedTitle(for: name)
             let subtitle = SearchResult.subtitleForInstalledApp(path: path, description: description)
             cell.apply(title: title, titleColor: NSColor.white, subtitle: subtitle)
@@ -99,7 +99,7 @@ extension SearchResult {
             if let desc = cask.desc, !desc.isEmpty { return subtitleHeight }
             if let homepage = cask.homepage, !homepage.isEmpty { return subtitleHeight }
             return titleOnlyHeight
-        case .installedAppMetadata(_, let path, _, let description):
+        case .installedAppMetadata(_, let path, _, let description, _):
             if path != nil { return subtitleHeight }
             if let description, !description.isEmpty { return subtitleHeight }
             return titleOnlyHeight
@@ -166,7 +166,7 @@ extension SearchResult {
     @discardableResult
     func handlePrimaryAction(commandText: String, controller: MainViewController) -> Bool {
         switch self {
-        case .installedAppMetadata(_, let path, let bundleID, let appDescription):
+        case .installedAppMetadata(_, let path, let bundleID, let appDescription, _):
             guard controller.launchInstalledApp(bundleId: bundleID, path: path) else { return false }
             let subtitle = SearchResult.subtitleForInstalledApp(path: path, description: appDescription)
             controller.recordSuccessfulRun(command: commandText, displayName: displayName, subtitle: subtitle)

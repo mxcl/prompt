@@ -82,10 +82,11 @@ final class InstalledApplicationsProvider: SearchProvider {
             guard score > 0 else { continue }
             guard Self.shouldIncludeInstalled(path: hit.path, score: score, nameLower: hit.lower, queryLower: query) else { continue }
 
+            let matchedCask = matchCask(for: hit)
+
             var description = hit.description
             if (description == nil || description?.isEmpty == true),
-               let match = CaskStore.shared.lookup(byNameOrToken: hit.name),
-               let cDesc = match.desc,
+               let cDesc = matchedCask?.desc,
                !cDesc.isEmpty {
                 description = cDesc
             }
@@ -94,7 +95,8 @@ final class InstalledApplicationsProvider: SearchProvider {
                 name: hit.name,
                 path: hit.path,
                 bundleID: hit.bundleID,
-                description: description
+                description: description,
+                cask: matchedCask
             )
             results.append(ProviderResult(source: .installedApplications, result: result, score: score))
         }
@@ -158,5 +160,23 @@ final class InstalledApplicationsProvider: SearchProvider {
             return String(remainder)
         }
         return lower
+    }
+
+    private func matchCask(for hit: AppHit) -> CaskData.CaskItem? {
+        if let c = CaskStore.shared.lookup(byNameOrToken: hit.name) {
+            return c
+        }
+
+        guard let path = hit.path else {
+            return nil
+        }
+
+        let url = URL(fileURLWithPath: path)
+        let filename = url.lastPathComponent
+        if let c = CaskStore.shared.lookupByAppFilename(filename) {
+            return c
+        }
+        let basename = (filename as NSString).deletingPathExtension
+        return CaskStore.shared.lookup(byNameOrToken: basename)
     }
 }
