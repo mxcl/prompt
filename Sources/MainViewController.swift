@@ -20,7 +20,7 @@ class NavigableTableView: NSTableView {
         return didResign
     }
 
-    private func refreshVisibleActionHints() {
+    func refreshVisibleActionHints() {
         let visibleRange = rows(in: visibleRect)
         guard visibleRange.location != NSNotFound, visibleRange.length > 0 else { return }
 
@@ -818,6 +818,12 @@ extension MainViewController: NSTableViewDelegate {
     func tableView(_ tableView: NSTableView, heightOfRow row: Int) -> CGFloat {
         guard row < apps.count else { return 24 }
         return apps[row].preferredRowHeight
+    }
+
+    func tableViewSelectionDidChange(_ notification: Notification) {
+        guard let tableView = notification.object as? NavigableTableView,
+              tableView === self.tableView else { return }
+        tableView.refreshVisibleActionHints()
     }
 }
 
