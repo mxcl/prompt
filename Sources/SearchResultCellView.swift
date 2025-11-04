@@ -65,25 +65,23 @@ final class SearchResultCellView: NSTableCellView {
 
     let titleField = VibrantTextField()
     let descField = VibrantTextField()
-    let homepageButton = NSButton(title: "Homepage", target: nil, action: nil)
-    let installButton = NSButton(title: "Install", target: nil, action: nil)
-    private let buttonStack = NSStackView()
+    private let actionHintStack = NSStackView()
+    private let enterKeyLabel = NSTextField(labelWithString: "↩︎")
+    private let actionHintLabel = NSTextField(labelWithString: "")
     private let titleStack = NSStackView()
     private let recentTagView = PillTagView(text: "recent")
 
-    private var trackingAdded = false
-    private var isHoverHighlightEnabled = false
-
-    private var titleTrailingToButtons: NSLayoutConstraint!
-    private var descTrailingToButtons: NSLayoutConstraint!
+    private var titleTrailingToHint: NSLayoutConstraint!
+    private var descTrailingToHint: NSLayoutConstraint!
     private var titleTrailingToEdge: NSLayoutConstraint!
     private var descTrailingToEdge: NSLayoutConstraint!
-    private var buttonVisibilityConstraints: [NSLayoutConstraint] = []
-    private var buttonHiddenConstraints: [NSLayoutConstraint] = []
+    private var hintVisibilityConstraints: [NSLayoutConstraint] = []
+    private var hintHiddenConstraints: [NSLayoutConstraint] = []
     private let baseTitleFont = NSFont.systemFont(ofSize: NSFont.systemFontSize)
     private let baseDescFont = NSFont.systemFont(ofSize: 13)
     private lazy var historyTitleFont: NSFont = baseTitleFont
     private lazy var historyDescFont: NSFont = baseDescFont
+    private var actionHintText: String?
 
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
@@ -120,27 +118,6 @@ final class SearchResultCellView: NSTableCellView {
 
         textField = titleField
 
-        let smallFont = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize - 1)
-        for button in [homepageButton, installButton] {
-            button.isBordered = false
-            button.bezelStyle = .inline
-            button.font = smallFont
-            button.contentTintColor = .tertiaryLabelColor
-            button.setButtonType(.momentaryChange)
-            button.focusRingType = .none
-        }
-
-        if let homeImage = NSImage(systemSymbolName: "house", accessibilityDescription: "Homepage") {
-            homepageButton.image = homeImage
-            homepageButton.imagePosition = .imageOnly
-            homepageButton.title = ""
-        } else {
-            homepageButton.title = "Home"
-        }
-
-        installButton.title = "Install…"
-        installButton.contentTintColor = .secondaryLabelColor
-
         titleStack.orientation = .horizontal
         titleStack.alignment = .centerY
         titleStack.spacing = 6
@@ -150,28 +127,52 @@ final class SearchResultCellView: NSTableCellView {
         recentTagView.isHidden = true
         addSubview(titleStack)
 
-        buttonStack.orientation = .horizontal
-        buttonStack.alignment = .centerY
-        buttonStack.spacing = 4
-        buttonStack.translatesAutoresizingMaskIntoConstraints = false
-        buttonStack.addArrangedSubview(homepageButton)
-        buttonStack.addArrangedSubview(installButton)
-        addSubview(buttonStack)
+        actionHintStack.orientation = .horizontal
+        actionHintStack.alignment = .centerY
+        actionHintStack.spacing = 4
+        actionHintStack.translatesAutoresizingMaskIntoConstraints = false
+        actionHintStack.isHidden = true
 
-        buttonStack.alphaValue = 1
+        enterKeyLabel.font = NSFont.monospacedSystemFont(ofSize: NSFont.smallSystemFontSize, weight: .semibold)
+        enterKeyLabel.textColor = NSColor.white.withAlphaComponent(0.75)
+        enterKeyLabel.alignment = .center
+        enterKeyLabel.drawsBackground = true
+        enterKeyLabel.backgroundColor = NSColor.white.withAlphaComponent(0.18)
+        enterKeyLabel.lineBreakMode = .byClipping
+        enterKeyLabel.translatesAutoresizingMaskIntoConstraints = false
+        enterKeyLabel.wantsLayer = true
+        enterKeyLabel.layer?.cornerRadius = 4
+        enterKeyLabel.layer?.masksToBounds = true
+        enterKeyLabel.setContentHuggingPriority(.required, for: .horizontal)
+        enterKeyLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
+        NSLayoutConstraint.activate([
+            enterKeyLabel.widthAnchor.constraint(equalToConstant: 24),
+            enterKeyLabel.heightAnchor.constraint(equalToConstant: 16)
+        ])
 
-        titleTrailingToButtons = titleStack.trailingAnchor.constraint(lessThanOrEqualTo: buttonStack.leadingAnchor, constant: -8)
-        descTrailingToButtons = descField.trailingAnchor.constraint(lessThanOrEqualTo: buttonStack.leadingAnchor, constant: -8)
+        actionHintLabel.font = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize - 1, weight: .medium)
+        actionHintLabel.textColor = NSColor.white.withAlphaComponent(0.7)
+        actionHintLabel.alignment = .left
+        actionHintLabel.translatesAutoresizingMaskIntoConstraints = false
+        actionHintLabel.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        actionHintLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
+
+        actionHintStack.addArrangedSubview(enterKeyLabel)
+        actionHintStack.addArrangedSubview(actionHintLabel)
+        addSubview(actionHintStack)
+
+        titleTrailingToHint = titleStack.trailingAnchor.constraint(lessThanOrEqualTo: actionHintStack.leadingAnchor, constant: -8)
+        descTrailingToHint = descField.trailingAnchor.constraint(lessThanOrEqualTo: actionHintStack.leadingAnchor, constant: -8)
         titleTrailingToEdge = titleStack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -4)
         descTrailingToEdge = descField.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -4)
-        let buttonStackTrailing = buttonStack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -4)
+        let hintStackTrailing = actionHintStack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -4)
 
-        buttonVisibilityConstraints = [
-            titleTrailingToButtons,
-            descTrailingToButtons
+        hintVisibilityConstraints = [
+            titleTrailingToHint,
+            descTrailingToHint
         ]
 
-        buttonHiddenConstraints = [
+        hintHiddenConstraints = [
             titleTrailingToEdge,
             descTrailingToEdge
         ]
@@ -184,35 +185,11 @@ final class SearchResultCellView: NSTableCellView {
             descField.leadingAnchor.constraint(equalTo: titleStack.leadingAnchor),
             descField.bottomAnchor.constraint(lessThanOrEqualTo: bottomAnchor, constant: -4),
 
-            buttonStack.centerYAnchor.constraint(equalTo: centerYAnchor),
-            buttonStackTrailing
+            actionHintStack.centerYAnchor.constraint(equalTo: centerYAnchor),
+            hintStackTrailing
         ])
 
-        setButtonsVisible(false)
-    }
-
-    override func updateTrackingAreas() {
-        super.updateTrackingAreas()
-        for area in trackingAreas {
-            removeTrackingArea(area)
-        }
-
-        guard isHoverHighlightEnabled else { return }
-
-        let options: NSTrackingArea.Options = [.mouseEnteredAndExited, .inVisibleRect, .activeAlways]
-        let area = NSTrackingArea(rect: bounds, options: options, owner: self, userInfo: nil)
-        addTrackingArea(area)
-        trackingAdded = true
-    }
-
-    override func mouseEntered(with event: NSEvent) {
-        guard isHoverHighlightEnabled else { return }
-        setButtonBorders(visible: true)
-    }
-
-    override func mouseExited(with event: NSEvent) {
-        guard isHoverHighlightEnabled else { return }
-        setButtonBorders(visible: false)
+        setActionHint(nil)
     }
 
     func apply(title: String,
@@ -234,33 +211,18 @@ final class SearchResultCellView: NSTableCellView {
     }
 
     func configureForInstalled() {
-        isHoverHighlightEnabled = false
-        setButtonsVisible(false)
         applyBaseFonts()
         applySingleLineTitle()
         recentTagView.isHidden = true
     }
 
-    func configureForCask(homepageAvailable: Bool, row: Int, target: AnyObject, homepageSelector: Selector, installSelector: Selector) {
-        isHoverHighlightEnabled = true
-        setButtonsVisible(true)
-        homepageButton.isHidden = !homepageAvailable
-        installButton.isHidden = false
-        homepageButton.tag = row
-        installButton.tag = row
-        homepageButton.target = target
-        homepageButton.action = homepageSelector
-        installButton.target = target
-        installButton.action = installSelector
-        setButtonBorders(visible: false)
+    func configureForCask() {
         applyBaseFonts()
         applySingleLineTitle()
         recentTagView.isHidden = true
     }
 
     func configureForHistory(isRecent: Bool, useReducedFonts: Bool) {
-        isHoverHighlightEnabled = false
-        setButtonsVisible(false)
         if useReducedFonts {
             titleField.font = historyTitleFont
             descField.font = historyDescFont
@@ -272,35 +234,66 @@ final class SearchResultCellView: NSTableCellView {
     }
 
     func configureForPlainText() {
-        isHoverHighlightEnabled = false
-        setButtonsVisible(false)
         applyBaseFonts()
         applySingleLineTitle()
         recentTagView.isHidden = true
     }
 
-    private func setButtonsVisible(_ visible: Bool) {
-        buttonStack.isHidden = !visible
-
-        if visible {
-            NSLayoutConstraint.deactivate(buttonHiddenConstraints)
-            NSLayoutConstraint.activate(buttonVisibilityConstraints)
-            homepageButton.isHidden = false
-            installButton.isHidden = false
+    func setActionHint(_ text: String?) {
+        let trimmed = text?.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let trimmed, !trimmed.isEmpty {
+            actionHintText = trimmed
+            actionHintLabel.stringValue = trimmed
         } else {
-            NSLayoutConstraint.deactivate(buttonVisibilityConstraints)
-            NSLayoutConstraint.activate(buttonHiddenConstraints)
-            homepageButton.isHidden = true
-            installButton.isHidden = true
+            actionHintText = nil
+            actionHintLabel.stringValue = ""
         }
-
-        setButtonBorders(visible: false)
+        updateActionHintVisibility()
     }
 
-    private func setButtonBorders(visible: Bool) {
-        for button in [homepageButton, installButton] {
-            button.isBordered = visible
+    func refreshActionHintVisibility() {
+        updateActionHintVisibility()
+    }
+
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        setActionHint(nil)
+    }
+
+    override var backgroundStyle: NSView.BackgroundStyle {
+        didSet {
+            updateActionHintVisibility()
         }
+    }
+
+    private func updateActionHintVisibility() {
+        let isTableActive = isTableViewFirstResponder()
+        let shouldShow = isTableActive && (backgroundStyle == .emphasized) && !(actionHintText?.isEmpty ?? true)
+        actionHintStack.isHidden = !shouldShow
+
+        if shouldShow {
+            NSLayoutConstraint.deactivate(hintHiddenConstraints)
+            NSLayoutConstraint.activate(hintVisibilityConstraints)
+        } else {
+            NSLayoutConstraint.deactivate(hintVisibilityConstraints)
+            NSLayoutConstraint.activate(hintHiddenConstraints)
+        }
+    }
+
+    private func isTableViewFirstResponder() -> Bool {
+        guard let tableView = enclosingTableView() else { return false }
+        return tableView.window?.firstResponder === tableView
+    }
+
+    private func enclosingTableView() -> NSTableView? {
+        var current: NSView? = superview
+        while let view = current {
+            if let tableView = view as? NSTableView {
+                return tableView
+            }
+            current = view.superview
+        }
+        return nil
     }
 
     private func applySingleLineTitle() {

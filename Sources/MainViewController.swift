@@ -4,6 +4,34 @@ import Cocoa
 class NavigableTableView: NSTableView {
     weak var navigationDelegate: TableViewNavigationDelegate?
 
+    override func becomeFirstResponder() -> Bool {
+        let didBecome = super.becomeFirstResponder()
+        if didBecome {
+            refreshVisibleActionHints()
+        }
+        return didBecome
+    }
+
+    override func resignFirstResponder() -> Bool {
+        let didResign = super.resignFirstResponder()
+        if didResign {
+            refreshVisibleActionHints()
+        }
+        return didResign
+    }
+
+    private func refreshVisibleActionHints() {
+        let visibleRange = rows(in: visibleRect)
+        guard visibleRange.location != NSNotFound, visibleRange.length > 0 else { return }
+
+        let endIndex = visibleRange.location + visibleRange.length
+        for row in visibleRange.location..<endIndex where row >= 0 && row < numberOfRows {
+            if let cell = view(atColumn: 0, row: row, makeIfNecessary: false) as? SearchResultCellView {
+                cell.refreshActionHintVisibility()
+            }
+        }
+    }
+
     override func keyDown(with event: NSEvent) {
         switch event.keyCode {
         case 126: // Up arrow
@@ -89,23 +117,6 @@ class MainViewController: NSViewController {
     private var suppressNextManualUpdate = false
     private var preferredHistoryQuery: String?
     private let isAutocompleteEnabled = false // Temporary toggle while debugging autocomplete behavior
-
-    // MARK: - Button Actions
-    @objc func homepageButtonPressed(_ sender: NSButton) {
-        let row = sender.tag
-        guard row >= 0 && row < apps.count else { return }
-        if case .availableCask(let cask) = apps[row], let homepage = cask.homepage, let url = URL(string: homepage) {
-            NSWorkspace.shared.open(url)
-        }
-    }
-
-    @objc func installButtonPressed(_ sender: NSButton) {
-        let row = sender.tag
-        guard row >= 0 && row < apps.count else { return }
-        if case .availableCask(let cask) = apps[row] {
-            _ = installCask(cask)
-        }
-    }
 
     override func loadView() {
         let effectView = NSVisualEffectView(frame: NSRect(x: 0, y: 0, width: 600, height: 400))
@@ -800,7 +811,7 @@ extension MainViewController: NSTableViewDelegate {
         let cell = (tableView.makeView(withIdentifier: identifier, owner: self) as? SearchResultCellView) ?? SearchResultCellView()
         cell.identifier = identifier
 
-        apps[row].configureCell(cell, controller: self, row: row)
+        apps[row].configureCell(cell, controller: self)
         return cell
     }
 

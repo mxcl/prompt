@@ -1,7 +1,9 @@
 import Cocoa
 
 extension SearchResult {
-    func configureCell(_ cell: SearchResultCellView, controller: MainViewController, row: Int) {
+    func configureCell(_ cell: SearchResultCellView, controller: MainViewController) {
+        let actionHint = enterActionHint
+
         switch self {
         case .installedAppMetadata(let name, let path, _, let description):
             let title = decoratedTitle(for: name)
@@ -16,13 +18,7 @@ extension SearchResult {
             let subtitle = SearchResult.subtitleForCask(cask)
 
             cell.apply(title: title, titleColor: NSColor.systemGreen.withAlphaComponent(0.85), subtitle: subtitle)
-            cell.configureForCask(
-                homepageAvailable: cask.homepage != nil,
-                row: row,
-                target: controller,
-                homepageSelector: #selector(MainViewController.homepageButtonPressed(_:)),
-                installSelector: #selector(MainViewController.installButtonPressed(_:))
-            )
+            cell.configureForCask()
 
         case .historyCommand(let command, let display, let storedSubtitle, let isRecent):
             let trimmedCommand = command.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -67,6 +63,8 @@ extension SearchResult {
             cell.apply(title: title, titleColor: NSColor.white, subtitle: nil)
             cell.configureForInstalled()
         }
+
+        cell.setActionHint(actionHint)
     }
 
     var preferredRowHeight: CGFloat {
@@ -90,6 +88,23 @@ extension SearchResult {
             return subtitleHeight
         @unknown default:
             return titleOnlyHeight
+        }
+    }
+
+    var enterActionHint: String {
+        switch self {
+        case .installedAppMetadata:
+            return "open"
+        case .availableCask:
+            return "Homepage"
+        case .historyCommand:
+            return "run"
+        case .url:
+            return "open"
+        case .filesystemEntry(let entry):
+            return entry.isDirectory ? "Activate" : "open"
+        @unknown default:
+            return "open"
         }
     }
 
