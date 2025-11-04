@@ -415,7 +415,7 @@ class MainViewController: NSViewController {
         return nil
     }
 
-    func recordSuccessfulRun(command: String, displayName: String? = nil, subtitle: String? = nil) {
+    func recordSuccessfulRun(command: String, displayName: String? = nil, subtitle: String? = nil, context: CommandHistoryEntry.Context? = nil) {
         let trimmed = command.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
         #if DEBUG
@@ -425,7 +425,7 @@ class MainViewController: NSViewController {
             print("[CommandHistory] Recording command='\(trimmed)'")
         }
         #endif
-        commandHistory.record(command: trimmed, display: displayName, subtitle: subtitle)
+        commandHistory.record(command: trimmed, display: displayName, subtitle: subtitle, context: context)
     }
 
     func shouldUseReducedRecentFont(isRecentResult: Bool) -> Bool {
@@ -511,7 +511,7 @@ class MainViewController: NSViewController {
                    let preferredQuery = self.preferredHistoryQuery?.lowercased(),
                    preferredQuery == searchText.lowercased(),
                    let index = finalResults.firstIndex(where: {
-                       if case .historyCommand(let cmd, _, _, _) = $0 {
+                       if case .historyCommand(let cmd, _, _, _, _) = $0 {
                            return cmd.lowercased() == preferred
                        }
                        return false
@@ -980,7 +980,7 @@ class MainViewController: NSViewController {
                 self.tableView.reloadData()
 
                 if let historyIndex = results.firstIndex(where: {
-                    if case .historyCommand(let storedCommand, _, _, _) = $0 {
+                    if case .historyCommand(let storedCommand, _, _, _, _) = $0 {
                         return storedCommand.caseInsensitiveCompare(trimmed) == .orderedSame
                     }
                     return false
@@ -1139,7 +1139,7 @@ extension MainViewController: NSTextFieldDelegate {
 extension MainViewController: TableViewNavigationDelegate {
     func tableView(_ tableView: NSTableView, shouldDeleteRow row: Int) -> Bool {
         guard row >= 0 && row < apps.count else { return false }
-        guard case .historyCommand(let command, _, _, _) = apps[row] else { return false }
+        guard case .historyCommand(let command, _, _, _, _) = apps[row] else { return false }
         dismissCommandMenu(focusTarget: .tableView)
 
         let removed = commandHistory.remove(command: command)

@@ -1,5 +1,22 @@
 import Cocoa
 
+private extension SearchResult {
+    var historyContextResult: SearchResult? {
+        guard case .historyCommand(_, _, _, let context, _) = self else { return nil }
+        return context?.resolvedSearchResult()
+    }
+}
+
+private extension CommandHistoryEntry.Context {
+    func resolvedSearchResult() -> SearchResult? {
+        switch self {
+        case .availableCask(let token):
+            guard let cask = CaskStore.shared.lookup(byNameOrToken: token) else { return nil }
+            return .availableCask(cask)
+        }
+    }
+}
+
 extension SearchResult {
     func configureCell(_ cell: SearchResultCellView, controller: MainViewController) {
         let hints = actionHints
@@ -20,7 +37,11 @@ extension SearchResult {
             cell.apply(title: title, titleColor: NSColor.systemGreen.withAlphaComponent(0.85), subtitle: subtitle)
             cell.configureForCask()
 
-        case .historyCommand(let command, let display, let storedSubtitle, let isRecent):
+        case .historyCommand(let command, let display, let storedSubtitle, _, let isRecent):
+            if let contextResult = historyContextResult {
+                contextResult.configureCell(cell, controller: controller)
+                return
+            }
             let trimmedCommand = command.trimmingCharacters(in: .whitespacesAndNewlines)
             let trimmedDisplay = display?.trimmingCharacters(in: .whitespacesAndNewlines)
             let titleSource = (trimmedDisplay?.isEmpty == false) ? trimmedDisplay! : trimmedCommand
@@ -82,6 +103,9 @@ extension SearchResult {
             if let description, !description.isEmpty { return subtitleHeight }
             return titleOnlyHeight
         case .historyCommand:
+            if let contextual = historyContextResult {
+                return contextual.preferredRowHeight
+            }
             return subtitleHeight
         case .url:
             return subtitleHeight
@@ -99,6 +123,9 @@ extension SearchResult {
         case .availableCask:
             return "Homepage"
         case .historyCommand:
+            if let contextual = historyContextResult {
+                return contextual.enterActionHint
+            }
             return "Open"
         case .url:
             return "Open"
@@ -116,6 +143,11 @@ extension SearchResult {
                 SearchResultCellView.ActionHint(keyGlyph: "⏎", text: "Homepage"),
                 SearchResultCellView.ActionHint(keyGlyph: "⌥⏎", text: "Install")
             ]
+        case .historyCommand:
+            if let contextual = historyContextResult {
+                return contextual.actionHints
+            }
+            return [SearchResultCellView.ActionHint(keyGlyph: "⏎", text: enterActionHint)]
         default:
             return [SearchResultCellView.ActionHint(keyGlyph: "⏎", text: enterActionHint)]
         }
@@ -143,11 +175,15 @@ extension SearchResult {
         case .availableCask(let cask):
             guard controller.openCaskHomepage(cask) else { return false }
             let subtitle = SearchResult.subtitleForCask(cask)
-            controller.recordSuccessfulRun(command: commandText, displayName: displayName, subtitle: subtitle)
+            let context = CommandHistoryEntry.Context.availableCask(token: cask.token)
+            controller.recordSuccessfulRun(command: commandText, displayName: displayName, subtitle: subtitle, context: context)
             controller.resetSearchFieldAndResults()
             return true
 
-        case .historyCommand(let command, let display, _, _):
+        case .historyCommand(let command, let display, _, _, _):
+            if let contextual = historyContextResult {
+                return contextual.handlePrimaryAction(commandText: command, controller: controller)
+            }
             return controller.executeHistoryCommand(command, display: display)
 
         case .url(let url):
@@ -176,9 +212,15 @@ extension SearchResult {
         case .availableCask(let cask):
             guard controller.installCask(cask) else { return false }
             let subtitle = SearchResult.subtitleForCask(cask)
-            controller.recordSuccessfulRun(command: commandText, displayName: displayName, subtitle: subtitle)
+            let context = CommandHistoryEntry.Context.availableCask(token: cask.token)
+            controller.recordSuccessfulRun(command: commandText, displayName: displayName, subtitle: subtitle, context: context)
             controller.resetSearchFieldAndResults()
             return true
+        case .historyCommand(let command, let display, _, _, _):
+            if let contextual = historyContextResult {
+                return contextual.handleAlternateAction(commandText: command, controller: controller)
+            }
+            return controller.executeHistoryCommand(command, display: display)
         default:
             return handlePrimaryAction(commandText: commandText, controller: controller)
         }

@@ -4,11 +4,45 @@ struct CommandHistoryEntry: Codable {
     let command: String
     let display: String?
     let subtitle: String?
+    let context: Context?
 
-    init(command: String, display: String?, subtitle: String?) {
+    init(command: String, display: String?, subtitle: String?, context: Context? = nil) {
         self.command = command
         self.display = display
         self.subtitle = subtitle
+        self.context = context
+    }
+
+    enum Context: Codable {
+        case availableCask(token: String)
+
+        private enum CodingKeys: String, CodingKey {
+            case type
+            case token
+        }
+
+        private enum ContextType: String, Codable {
+            case availableCask
+        }
+
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            let type = try container.decode(ContextType.self, forKey: .type)
+            switch type {
+            case .availableCask:
+                let token = try container.decode(String.self, forKey: .token)
+                self = .availableCask(token: token)
+            }
+        }
+
+        func encode(to encoder: Encoder) throws {
+            var container = encoder.container(keyedBy: CodingKeys.self)
+            switch self {
+            case .availableCask(let token):
+                try container.encode(ContextType.availableCask, forKey: .type)
+                try container.encode(token, forKey: .token)
+            }
+        }
     }
 }
 
@@ -41,7 +75,7 @@ final class CommandHistory {
     }
 
     /// Records a command the user launched successfully.
-    func record(command: String, display: String?, subtitle: String?) {
+    func record(command: String, display: String?, subtitle: String?, context: CommandHistoryEntry.Context?) {
         let trimmedCommand = command.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedCommand.isEmpty else { return }
         let trimmedDisplay = CommandHistory.sanitized(display)
@@ -50,7 +84,7 @@ final class CommandHistory {
         if let existingIndex = entries.firstIndex(where: { $0.command.caseInsensitiveCompare(trimmedCommand) == .orderedSame }) {
             entries.remove(at: existingIndex)
         }
-        entries.insert(CommandHistoryEntry(command: trimmedCommand, display: trimmedDisplay, subtitle: trimmedSubtitle), at: 0)
+        entries.insert(CommandHistoryEntry(command: trimmedCommand, display: trimmedDisplay, subtitle: trimmedSubtitle, context: context), at: 0)
 
         if entries.count > maxEntries {
             entries.removeLast(entries.count - maxEntries)

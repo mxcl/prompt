@@ -47,7 +47,13 @@ final class CommandHistoryProvider: SearchProvider {
             if lower == loweredQuery {
                 score = max(score, 1000)
             }
-            let result = SearchResult.historyCommand(command: command, display: entry.display, subtitle: entry.subtitle, isRecent: candidate.isRecent)
+            let result = SearchResult.historyCommand(
+                command: command,
+                display: entry.display,
+                subtitle: entry.subtitle,
+                context: entry.context,
+                isRecent: candidate.isRecent
+            )
             results.append(ProviderResult(source: .commandHistory, result: result, score: score))
         }
 
