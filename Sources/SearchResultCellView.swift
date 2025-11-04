@@ -108,6 +108,77 @@ private final class KeycapLabel: NSView {
     }
 }
 
+private final class ActionHintPillView: NSView {
+    private let label: NSTextField
+    private let horizontalPadding: CGFloat = 10
+    private let verticalPadding: CGFloat = 4
+    private let spacing: String = "  "
+
+    init(keyGlyph: String, text: String) {
+        label = NSTextField(labelWithString: "")
+        super.init(frame: .zero)
+        wantsLayer = true
+        translatesAutoresizingMaskIntoConstraints = false
+
+        label.font = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize, weight: .medium)
+        label.textColor = NSColor.white.withAlphaComponent(0.85)
+        label.alignment = .center
+        label.translatesAutoresizingMaskIntoConstraints = false
+
+        addSubview(label)
+
+        NSLayoutConstraint.activate([
+            label.leadingAnchor.constraint(equalTo: leadingAnchor, constant: horizontalPadding),
+            label.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -horizontalPadding),
+            label.topAnchor.constraint(equalTo: topAnchor, constant: verticalPadding),
+            label.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -verticalPadding)
+        ])
+
+        setContentHuggingPriority(.required, for: .horizontal)
+        setContentCompressionResistancePriority(.required, for: .horizontal)
+
+        applyText(keyGlyph: keyGlyph, text: text)
+    }
+
+    required init?(coder: NSCoder) {
+        return nil
+    }
+
+    private func applyText(keyGlyph: String, text: String) {
+        let attributed = NSMutableAttributedString()
+        let keyAttributes: [NSAttributedString.Key: Any] = [
+            .font: NSFont.systemFont(ofSize: NSFont.smallSystemFontSize, weight: .semibold),
+            .foregroundColor: NSColor.white
+        ]
+        attributed.append(NSAttributedString(string: keyGlyph, attributes: keyAttributes))
+
+        if !text.isEmpty {
+            let textAttributes: [NSAttributedString.Key: Any] = [
+                .font: NSFont.systemFont(ofSize: NSFont.smallSystemFontSize, weight: .medium),
+                .foregroundColor: NSColor.white.withAlphaComponent(0.85)
+            ]
+            let combinedText = spacing + text
+            attributed.append(NSAttributedString(string: combinedText, attributes: textAttributes))
+        }
+
+        label.attributedStringValue = attributed
+    }
+
+    override var intrinsicContentSize: NSSize {
+        let labelSize = label.intrinsicContentSize
+        return NSSize(width: labelSize.width + horizontalPadding * 2,
+                      height: labelSize.height + verticalPadding * 2)
+    }
+
+    override func layout() {
+        super.layout()
+        layer?.cornerRadius = min(6, bounds.height / 2)
+        layer?.backgroundColor = NSColor.white.withAlphaComponent(0.14).cgColor
+        layer?.borderColor = NSColor.white.withAlphaComponent(0.2).cgColor
+        layer?.borderWidth = 0.75
+    }
+}
+
 final class SearchResultCellView: NSTableCellView {
     struct ActionHint {
         let keyGlyph: String
@@ -382,21 +453,8 @@ final class SearchResultCellView: NSTableCellView {
         actionHintsContentStack.isHidden = hintViews.isEmpty
     }
 
-    private func makeHintView(for hint: ActionHint) -> NSStackView {
-        let keyLabel = KeycapLabel(text: hint.keyGlyph)
-
-        let textLabel = NSTextField(labelWithString: hint.text)
-        textLabel.font = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize, weight: .medium)
-        textLabel.textColor = NSColor.white.withAlphaComponent(0.8)
-        textLabel.alignment = .left
-        textLabel.setContentHuggingPriority(.defaultLow, for: .horizontal)
-        textLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
-
-        let stack = NSStackView(views: [keyLabel, textLabel])
-        stack.orientation = .horizontal
-        stack.alignment = .centerY
-        stack.spacing = 6
-        return stack
+    private func makeHintView(for hint: ActionHint) -> NSView {
+        return ActionHintPillView(keyGlyph: hint.keyGlyph, text: hint.text)
     }
 
 }
