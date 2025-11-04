@@ -595,14 +595,21 @@ class MainViewController: NSViewController {
             caskContext = nil
         }
 
+        let primarySubtitle: String?
+        if result.isInstalled {
+            primarySubtitle = nil
+        } else {
+            primarySubtitle = caskContext?.homepage
+        }
+
         if let primaryHint = hints.first {
-            menuItems.append(CommandMenuItem(title: primaryHint.text, subtitle: caskContext?.homepage, keyGlyph: primaryHint.keyGlyph) { [weak self] in
+            menuItems.append(CommandMenuItem(title: primaryHint.text, subtitle: primarySubtitle, keyGlyph: primaryHint.keyGlyph) { [weak self] in
                 guard let self = self else { return }
                 let commandText = self.searchField.stringValue
                 _ = result.handlePrimaryAction(commandText: commandText, controller: self)
             })
         } else {
-            menuItems.append(CommandMenuItem(title: result.enterActionHint, subtitle: caskContext?.homepage, keyGlyph: "⏎") { [weak self] in
+            menuItems.append(CommandMenuItem(title: result.enterActionHint, subtitle: primarySubtitle, keyGlyph: "⏎") { [weak self] in
                 guard let self = self else { return }
                 let commandText = self.searchField.stringValue
                 _ = result.handlePrimaryAction(commandText: commandText, controller: self)
@@ -645,7 +652,7 @@ class MainViewController: NSViewController {
         if case .installedAppMetadata(_, let path, _, _, _) = result,
            let path,
            !path.isEmpty {
-            menuItems.append(CommandMenuItem(title: "Reveal in Finder", keyGlyph: nil) { [weak self] in
+            menuItems.append(CommandMenuItem(title: "Reveal in Finder", subtitle: path, keyGlyph: nil) { [weak self] in
                 self?.revealInFinder(path: path)
             })
         }
