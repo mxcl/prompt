@@ -254,7 +254,7 @@ final class SearchResultCellView: NSTableCellView {
 
         actionHintStack.orientation = .horizontal
         actionHintStack.alignment = .centerY
-        actionHintStack.spacing = 10
+        actionHintStack.spacing = 8
         actionHintStack.translatesAutoresizingMaskIntoConstraints = false
         actionHintStack.isHidden = true
 
