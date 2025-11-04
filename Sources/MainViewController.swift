@@ -477,7 +477,9 @@ class MainViewController: NSViewController {
             tableView.scrollRowToVisible(0)
         }
 
-        tableView.refreshVisibleActionHints()
+        DispatchQueue.main.async { [weak self] in
+            self?.tableView.refreshVisibleActionHints()
+        }
     }
 
     private func urlResult(for input: String) -> SearchResult? {
