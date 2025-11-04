@@ -12,7 +12,7 @@ extension SearchResult {
             cell.configureForInstalled()
 
         case .availableCask(let cask):
-            let baseTitle = "\(cask.displayName) (install)"
+            let baseTitle = cask.displayName
             let title = decoratedTitle(for: baseTitle)
 
             let subtitle = SearchResult.subtitleForCask(cask)
@@ -113,7 +113,7 @@ extension SearchResult {
         case .availableCask:
             return [
                 SearchResultCellView.ActionHint(keyGlyph: "↩︎", text: "Homepage"),
-                SearchResultCellView.ActionHint(keyGlyph: "⌥↩︎", text: "Install & Run")
+                SearchResultCellView.ActionHint(keyGlyph: "⌥↩︎", text: "Install")
             ]
         default:
             return [SearchResultCellView.ActionHint(keyGlyph: "↩︎", text: enterActionHint)]
