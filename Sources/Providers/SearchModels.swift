@@ -120,6 +120,14 @@ extension CommandHistoryEntry.Context {
         case .availableCask(let token):
             guard let cask = CaskStore.shared.lookup(byNameOrToken: token) else { return nil }
             return .availableCask(cask)
+        case .installedApp(let name, let path, let bundleID, let description, let caskToken):
+            let cask: CaskData.CaskItem?
+            if let token = caskToken {
+                cask = CaskStore.shared.lookup(byNameOrToken: token)
+            } else {
+                cask = nil
+            }
+            return .installedAppMetadata(name: name, path: path, bundleID: bundleID, description: description, cask: cask)
         }
     }
 }

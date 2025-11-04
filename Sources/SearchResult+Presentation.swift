@@ -155,10 +155,17 @@ extension SearchResult {
     @discardableResult
     func handlePrimaryAction(commandText: String, controller: MainViewController) -> Bool {
         switch self {
-        case .installedAppMetadata(_, let path, let bundleID, let appDescription, _):
+        case .installedAppMetadata(let name, let path, let bundleID, let appDescription, let cask):
             guard controller.launchInstalledApp(bundleId: bundleID, path: path) else { return false }
             let subtitle = SearchResult.subtitleForInstalledApp(path: path, description: appDescription)
-            controller.recordSuccessfulRun(command: commandText, displayName: displayName, subtitle: subtitle)
+            let context = CommandHistoryEntry.Context.installedApp(
+                name: name,
+                path: path,
+                bundleID: bundleID,
+                description: appDescription,
+                caskToken: cask?.token
+            )
+            controller.recordSuccessfulRun(command: commandText, displayName: displayName, subtitle: subtitle, context: context)
             controller.resetSearchFieldAndResults()
             return true
 
