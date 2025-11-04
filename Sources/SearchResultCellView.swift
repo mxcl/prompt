@@ -320,7 +320,7 @@ final class SearchResultCellView: NSTableCellView {
 
     private func makeHintView(for hint: ActionHint) -> NSStackView {
         let keyLabel = NSTextField(labelWithString: hint.keyGlyph)
-        keyLabel.font = NSFont.monospacedSystemFont(ofSize: NSFont.smallSystemFontSize, weight: .semibold)
+        keyLabel.font = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize - 1, weight: .semibold)
         keyLabel.textColor = NSColor.white.withAlphaComponent(0.75)
         keyLabel.alignment = .center
         keyLabel.drawsBackground = true
@@ -332,9 +332,11 @@ final class SearchResultCellView: NSTableCellView {
         keyLabel.layer?.masksToBounds = true
         keyLabel.setContentHuggingPriority(.required, for: .horizontal)
         keyLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
+        let widthConstraint = keyLabel.widthAnchor.constraint(greaterThanOrEqualToConstant: 24)
+        widthConstraint.priority = .defaultHigh
         NSLayoutConstraint.activate([
-            keyLabel.widthAnchor.constraint(equalToConstant: 28),
-            keyLabel.heightAnchor.constraint(equalToConstant: 16)
+            widthConstraint,
+            keyLabel.heightAnchor.constraint(equalToConstant: 18)
         ])
 
         let textLabel = NSTextField(labelWithString: hint.text)
