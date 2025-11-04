@@ -254,13 +254,13 @@ final class SearchResultCellView: NSTableCellView {
 
         actionHintStack.orientation = .horizontal
         actionHintStack.alignment = .centerY
-        actionHintStack.spacing = 12
+        actionHintStack.spacing = 10
         actionHintStack.translatesAutoresizingMaskIntoConstraints = false
         actionHintStack.isHidden = true
 
         actionHintsContentStack.orientation = .horizontal
         actionHintsContentStack.alignment = .centerY
-        actionHintsContentStack.spacing = 12
+        actionHintsContentStack.spacing = 10
         actionHintsContentStack.translatesAutoresizingMaskIntoConstraints = false
 
         actionHintStack.addArrangedSubview(actionHintsContentStack)
