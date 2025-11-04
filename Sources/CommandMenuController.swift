@@ -246,9 +246,11 @@ final class CommandMenuController: NSViewController {
     }
 
     private func selectInitialRowIfNeeded() {
-        guard tableView.numberOfRows > 0 else { return }
-        tableView.selectRowIndexes(IndexSet(integer: 0), byExtendingSelection: false)
-        tableView.scrollRowToVisible(0)
+        let rowCount = tableView.numberOfRows
+        guard rowCount > 0 else { return }
+        let initialRow = rowCount > 1 ? 1 : 0
+        tableView.selectRowIndexes(IndexSet(integer: initialRow), byExtendingSelection: false)
+        tableView.scrollRowToVisible(initialRow)
     }
 
     @objc private func invokeSelectedItem() {
