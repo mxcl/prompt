@@ -119,8 +119,10 @@ final class SearchResultCellView: NSTableCellView {
     let titleField = VibrantTextField()
     let descField = VibrantTextField()
     private let actionHintStack = NSStackView()
+    private let actionHintsContentStack = NSStackView()
     private let titleStack = NSStackView()
     private let recentTagView = PillTagView(text: "recent")
+    private let commandMenuHintView = KeycapLabel(text: "→")
 
     private var titleTrailingToHint: NSLayoutConstraint!
     private var descTrailingToHint: NSLayoutConstraint!
@@ -184,6 +186,14 @@ final class SearchResultCellView: NSTableCellView {
         actionHintStack.spacing = 12
         actionHintStack.translatesAutoresizingMaskIntoConstraints = false
         actionHintStack.isHidden = true
+
+        actionHintsContentStack.orientation = .horizontal
+        actionHintsContentStack.alignment = .centerY
+        actionHintsContentStack.spacing = 12
+        actionHintsContentStack.translatesAutoresizingMaskIntoConstraints = false
+
+        actionHintStack.addArrangedSubview(actionHintsContentStack)
+        actionHintStack.addArrangedSubview(commandMenuHintView)
 
         addSubview(actionHintStack)
 
@@ -299,7 +309,7 @@ final class SearchResultCellView: NSTableCellView {
     }
 
     private func updateActionHintVisibility() {
-        let shouldShow = isCellSelected() && !actionHints.isEmpty
+        let shouldShow = isCellSelected()
         actionHintStack.isHidden = !shouldShow
 
         if shouldShow {
@@ -358,16 +368,18 @@ final class SearchResultCellView: NSTableCellView {
 
     private func rebuildHintViews() {
         hintViews.forEach { view in
-            actionHintStack.removeArrangedSubview(view)
+            actionHintsContentStack.removeArrangedSubview(view)
             view.removeFromSuperview()
         }
         hintViews.removeAll()
 
         for hint in actionHints {
             let view = makeHintView(for: hint)
-            actionHintStack.addArrangedSubview(view)
+            actionHintsContentStack.addArrangedSubview(view)
             hintViews.append(view)
         }
+
+        actionHintsContentStack.isHidden = hintViews.isEmpty
     }
 
     private func makeHintView(for hint: ActionHint) -> NSStackView {
