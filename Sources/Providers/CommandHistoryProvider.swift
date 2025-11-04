@@ -17,19 +17,10 @@ final class CommandHistoryProvider: SearchProvider {
         var candidates: [(entry: CommandHistoryEntry, score: Int, isRecent: Bool)] = []
 
         let fuzzy = filteredFuzzyMatches(for: query.trimmed)
-        if !fuzzy.isEmpty {
-            for (index, match) in fuzzy.enumerated() {
-                let recencyBoost = max(0, (limit - index) * 10)
-                let score = baseScore + recencyBoost + match.score
-                candidates.append((match.entry, score, false))
-            }
-        } else {
-            let recents = history.recentEntries(limit: limit)
-            for (index, entry) in recents.enumerated() {
-                let recencyBoost = max(0, (limit - index) * 10)
-                let score = baseScore + recencyBoost
-                candidates.append((entry, score, true))
-            }
+        for (index, match) in fuzzy.enumerated() {
+            let recencyBoost = max(0, (limit - index) * 10)
+            let score = baseScore + recencyBoost + match.score
+            candidates.append((match.entry, score, false))
         }
 
         var added = Set<String>()
