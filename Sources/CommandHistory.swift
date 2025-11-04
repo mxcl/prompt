@@ -15,21 +15,14 @@ struct CommandHistoryEntry: Codable {
 
     enum Context: Codable {
         case availableCask(token: String)
-        case installedApp(name: String, path: String?, bundleID: String?, description: String?, caskToken: String?)
 
         private enum CodingKeys: String, CodingKey {
             case type
             case token
-            case name
-            case path
-            case bundleID
-            case description
-            case caskToken
         }
 
         private enum ContextType: String, Codable {
             case availableCask
-            case installedApp
         }
 
         init(from decoder: Decoder) throws {
@@ -39,13 +32,6 @@ struct CommandHistoryEntry: Codable {
             case .availableCask:
                 let token = try container.decode(String.self, forKey: .token)
                 self = .availableCask(token: token)
-            case .installedApp:
-                let name = try container.decode(String.self, forKey: .name)
-                let path = try container.decodeIfPresent(String.self, forKey: .path)
-                let bundleID = try container.decodeIfPresent(String.self, forKey: .bundleID)
-                let description = try container.decodeIfPresent(String.self, forKey: .description)
-                let caskToken = try container.decodeIfPresent(String.self, forKey: .caskToken)
-                self = .installedApp(name: name, path: path, bundleID: bundleID, description: description, caskToken: caskToken)
             }
         }
 
@@ -55,13 +41,6 @@ struct CommandHistoryEntry: Codable {
             case .availableCask(let token):
                 try container.encode(ContextType.availableCask, forKey: .type)
                 try container.encode(token, forKey: .token)
-            case .installedApp(let name, let path, let bundleID, let description, let caskToken):
-                try container.encode(ContextType.installedApp, forKey: .type)
-                try container.encode(name, forKey: .name)
-                try container.encodeIfPresent(path, forKey: .path)
-                try container.encodeIfPresent(bundleID, forKey: .bundleID)
-                try container.encodeIfPresent(description, forKey: .description)
-                try container.encodeIfPresent(caskToken, forKey: .caskToken)
             }
         }
     }

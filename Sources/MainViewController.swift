@@ -624,6 +624,11 @@ class MainViewController: NSViewController {
                alternateHint.text.caseInsensitiveCompare("Install") == .orderedSame {
                 alternateSubtitle = "$ brew install --cask \(context.cask.token)"
                 alternateSubtitleStyle = .monospace
+            } else if alternateHint.text.caseInsensitiveCompare("Reveal in Finder") == .orderedSame,
+                      let path = result.installedAppPath,
+                      !path.isEmpty {
+                alternateSubtitle = path
+                alternateSubtitleStyle = .standard
             } else {
                 alternateSubtitle = nil
                 alternateSubtitleStyle = .standard
@@ -646,6 +651,14 @@ class MainViewController: NSViewController {
            !context.cask.token.isEmpty {
             menuItems.append(CommandMenuItem(title: "Homebrew Webpage", subtitle: context.brewURL, keyGlyph: nil) { [weak self] in
                 _ = self?.openCaskBrewPage(context.cask)
+            })
+        }
+
+        if case .installedAppMetadata(_, let path, _, _, _) = result,
+           let path,
+           !path.isEmpty {
+            menuItems.append(CommandMenuItem(title: "Reveal in Finder", subtitle: path, keyGlyph: nil) { [weak self] in
+                self?.revealInFinder(path: path)
             })
         }
 
