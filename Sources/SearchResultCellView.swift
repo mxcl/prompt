@@ -71,7 +71,7 @@ private final class KeycapLabel: NSView {
         wantsLayer = true
         translatesAutoresizingMaskIntoConstraints = false
 
-        label.font = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize - 1, weight: .semibold)
+        label.font = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize, weight: .regular)
         label.textColor = NSColor.white.withAlphaComponent(0.8)
         label.alignment = .center
         label.translatesAutoresizingMaskIntoConstraints = false

@@ -112,11 +112,11 @@ extension SearchResult {
         switch self {
         case .availableCask:
             return [
-                SearchResultCellView.ActionHint(keyGlyph: "↩︎", text: "Homepage"),
-                SearchResultCellView.ActionHint(keyGlyph: "⌥↩︎", text: "Install")
+                SearchResultCellView.ActionHint(keyGlyph: "⏎", text: "Homepage"),
+                SearchResultCellView.ActionHint(keyGlyph: "⌥⏎", text: "Install")
             ]
         default:
-            return [SearchResultCellView.ActionHint(keyGlyph: "↩︎", text: enterActionHint)]
+            return [SearchResultCellView.ActionHint(keyGlyph: "⏎", text: enterActionHint)]
         }
     }
 
