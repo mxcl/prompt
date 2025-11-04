@@ -157,7 +157,8 @@ final class CommandMenuController: NSViewController {
         guard !items.isEmpty else { return }
         self.items = items
         tableView.reloadData()
-        updatePreferredContentSize()
+        applyPreferredContentSize(for: items)
+        self.view.layoutSubtreeIfNeeded()
         if popover.isShown {
             popover.performClose(nil)
         }
@@ -233,19 +234,6 @@ final class CommandMenuController: NSViewController {
         tableView.scrollRowToVisible(0)
     }
 
-    private func updatePreferredContentSize() {
-        let visibleItems = Array(items.prefix(maxVisibleItems))
-        if visibleItems.isEmpty {
-            preferredContentSize = NSSize(width: preferredWidth, height: verticalPadding)
-            return
-        }
-
-        let rowsHeight = visibleItems.reduce(0) { $0 + rowHeight(for: $1) }
-        let spacing = CGFloat(max(visibleItems.count - 1, 0)) * tableView.intercellSpacing.height
-        let height = rowsHeight + spacing + verticalPadding
-        preferredContentSize = NSSize(width: preferredWidth, height: height)
-    }
-
     @objc private func invokeSelectedItem() {
         let row = tableView.selectedRow
         guard row >= 0, row < items.count else { return }
@@ -290,6 +278,24 @@ extension CommandMenuController: NSPopoverDelegate {
 }
 
 private extension CommandMenuController {
+    func applyPreferredContentSize(for items: [CommandMenuItem]) {
+        let size = preferredSize(for: items)
+        preferredContentSize = size
+        popover.contentSize = size
+    }
+
+    func preferredSize(for items: [CommandMenuItem]) -> NSSize {
+        let visibleItems = Array(items.prefix(maxVisibleItems))
+        guard !visibleItems.isEmpty else {
+            return NSSize(width: preferredWidth, height: verticalPadding)
+        }
+
+        let rowsHeight = visibleItems.reduce(0) { $0 + rowHeight(for: $1) }
+        let spacing = CGFloat(max(visibleItems.count - 1, 0)) * tableView.intercellSpacing.height
+        let height = rowsHeight + spacing + verticalPadding
+        return NSSize(width: preferredWidth, height: height)
+    }
+
     func rowHeight(for item: CommandMenuItem) -> CGFloat {
         return item.subtitle == nil ? singleLineRowHeight : doubleLineRowHeight
     }
