@@ -122,8 +122,12 @@ extension SearchResult {
 
     var actionHints: [SearchResultCellView.ActionHint] {
         switch self {
-        case .installedAppMetadata:
-            return [SearchResultCellView.ActionHint(keyGlyph: "⏎", text: enterActionHint)]
+        case .installedAppMetadata(_, let path, _, _, _):
+            var hints = [SearchResultCellView.ActionHint(keyGlyph: "⏎", text: enterActionHint)]
+            if let path, !path.isEmpty {
+                hints.append(SearchResultCellView.ActionHint(keyGlyph: "⌥⏎", text: "Reveal in Finder"))
+            }
+            return hints
         case .availableCask:
             return [
                 SearchResultCellView.ActionHint(keyGlyph: "⏎", text: "Homepage"),
