@@ -1,5 +1,13 @@
 import Cocoa
 
+private enum CommandMenuMetrics {
+    static let titleFont = NSFont.systemFont(ofSize: 13, weight: .medium)
+    static let subtitleFont = NSFont.systemFont(ofSize: 11)
+    static let keyFont = NSFont.monospacedSystemFont(ofSize: 12, weight: .regular)
+    static let keySpacing: CGFloat = 8
+    static let horizontalContentPadding: CGFloat = 24
+}
+
 struct CommandMenuItem {
     let title: String
     let subtitle: String?
@@ -62,16 +70,16 @@ final class CommandMenuController: NSViewController {
             textStack.spacing = 1
             textStack.translatesAutoresizingMaskIntoConstraints = false
 
-            titleField.font = NSFont.systemFont(ofSize: 13, weight: .medium)
+            titleField.font = CommandMenuMetrics.titleFont
             titleField.textColor = NSColor.white
             titleField.lineBreakMode = .byTruncatingTail
 
-            subtitleField.font = NSFont.systemFont(ofSize: 11)
+            subtitleField.font = CommandMenuMetrics.subtitleFont
             subtitleField.textColor = NSColor.white.withAlphaComponent(0.7)
             subtitleField.lineBreakMode = .byTruncatingTail
             subtitleField.isHidden = true
 
-            keyLabel.font = NSFont.monospacedSystemFont(ofSize: 12, weight: .regular)
+            keyLabel.font = CommandMenuMetrics.keyFont
             keyLabel.textColor = NSColor.white.withAlphaComponent(0.75)
             keyLabel.setContentHuggingPriority(.required, for: .horizontal)
 
@@ -115,7 +123,8 @@ final class CommandMenuController: NSViewController {
 
     private let scrollView = NSScrollView()
     private let minWidth: CGFloat = 220
-    private let preferredWidth: CGFloat = 260
+    private let defaultWidth: CGFloat = 260
+    private let maxWidth: CGFloat = 520
     private let verticalPadding: CGFloat = 24
     private let maxVisibleItems = 6
     private let singleLineRowHeight: CGFloat = 32
@@ -287,16 +296,48 @@ private extension CommandMenuController {
     func preferredSize(for items: [CommandMenuItem]) -> NSSize {
         let visibleItems = Array(items.prefix(maxVisibleItems))
         guard !visibleItems.isEmpty else {
-            return NSSize(width: preferredWidth, height: verticalPadding)
+            return NSSize(width: defaultWidth, height: verticalPadding)
         }
 
         let rowsHeight = visibleItems.reduce(0) { $0 + rowHeight(for: $1) }
         let spacing = CGFloat(max(visibleItems.count - 1, 0)) * tableView.intercellSpacing.height
         let height = rowsHeight + spacing + verticalPadding
-        return NSSize(width: preferredWidth, height: height)
+        let width = preferredWidth(for: items)
+        return NSSize(width: width, height: height)
     }
 
     func rowHeight(for item: CommandMenuItem) -> CGFloat {
-        return item.subtitle == nil ? singleLineRowHeight : doubleLineRowHeight
+        if let subtitle = item.subtitle, !subtitle.isEmpty {
+            return doubleLineRowHeight
+        }
+        return singleLineRowHeight
+    }
+
+    func preferredWidth(for items: [CommandMenuItem]) -> CGFloat {
+        let initialWidth = max(defaultWidth, minWidth)
+        let widestRow = items.reduce(initialWidth) { partial, item in
+            max(partial, rowWidth(for: item))
+        }
+        return min(maxWidth, max(minWidth, widestRow))
+    }
+
+    func rowWidth(for item: CommandMenuItem) -> CGFloat {
+        var contentWidth = textWidth(for: item.title, font: CommandMenuMetrics.titleFont)
+        if let subtitle = item.subtitle, !subtitle.isEmpty {
+            contentWidth = max(contentWidth, textWidth(for: subtitle, font: CommandMenuMetrics.subtitleFont))
+        }
+        let keyWidth = glyphWidth(for: item.keyGlyph)
+        return contentWidth + keyWidth + CommandMenuMetrics.horizontalContentPadding
+    }
+
+    func glyphWidth(for glyph: String?) -> CGFloat {
+        guard let glyph = glyph, !glyph.isEmpty else { return 0 }
+        let glyphWidth = textWidth(for: glyph, font: CommandMenuMetrics.keyFont)
+        return glyphWidth + CommandMenuMetrics.keySpacing
+    }
+
+    func textWidth(for text: String, font: NSFont) -> CGFloat {
+        let attributes: [NSAttributedString.Key: Any] = [.font: font]
+        return (text as NSString).size(withAttributes: attributes).width
     }
 }
