@@ -56,7 +56,12 @@ private final class PillTagView: NSView {
             .foregroundColor: label.textColor ?? NSColor.white,
             .kern: letterSpacing
         ]
-        label.attributedStringValue = NSAttributedString(string: uppercase, attributes: attributes)
+        let attributed = NSMutableAttributedString(string: uppercase, attributes: attributes)
+        if uppercase.count > 0 {
+            let lastCharacterRange = NSRange(location: uppercase.count - 1, length: 1)
+            attributed.addAttribute(.kern, value: 0, range: lastCharacterRange)
+        }
+        label.attributedStringValue = attributed
     }
 }
 
