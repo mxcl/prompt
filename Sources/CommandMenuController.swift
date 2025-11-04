@@ -124,16 +124,15 @@ final class CommandMenuController: NSViewController {
         guard !items.isEmpty else { return }
         self.items = items
         tableView.reloadData()
-        if tableView.numberOfRows > 0 {
-            tableView.selectRowIndexes(IndexSet(integer: 0), byExtendingSelection: false)
-            tableView.scrollRowToVisible(0)
-        }
         updatePreferredContentSize()
         if popover.isShown {
             popover.performClose(nil)
         }
         popover.show(relativeTo: rect, of: view, preferredEdge: preferredEdge)
         view.window?.makeFirstResponder(tableView)
+        DispatchQueue.main.async { [weak self] in
+            self?.selectInitialRowIfNeeded()
+        }
     }
 
     func dismiss() {
@@ -178,6 +177,7 @@ final class CommandMenuController: NSViewController {
         tableView.backgroundColor = .clear
         tableView.focusRingType = .none
         tableView.allowsTypeSelect = false
+        tableView.allowsEmptySelection = false
         tableView.selectionHighlightStyle = .regular
         tableView.rowHeight = 32
         tableView.intercellSpacing = NSSize(width: 0, height: 4)
@@ -192,6 +192,12 @@ final class CommandMenuController: NSViewController {
         let column = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("Command"))
         column.resizingMask = .autoresizingMask
         tableView.addTableColumn(column)
+    }
+
+    private func selectInitialRowIfNeeded() {
+        guard tableView.numberOfRows > 0 else { return }
+        tableView.selectRowIndexes(IndexSet(integer: 0), byExtendingSelection: false)
+        tableView.scrollRowToVisible(0)
     }
 
     private func updatePreferredContentSize() {
