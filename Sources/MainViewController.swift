@@ -640,7 +640,9 @@ class MainViewController: NSViewController {
             })
         }
 
-        if result.isInstalled,
+        let contextualInstalled = result.isInstalled || (result.historyContextResult?.isInstalled ?? false)
+
+        if contextualInstalled,
            let context = caskContext {
             menuItems.append(CommandMenuItem(title: "Homepage", subtitle: context.homepage, keyGlyph: nil) { [weak self] in
                 _ = self?.openCaskHomepage(context.cask)
