@@ -2,8 +2,16 @@ import Cocoa
 
 struct CommandMenuItem {
     let title: String
+    let subtitle: String?
     let keyGlyph: String?
     let handler: () -> Void
+
+    init(title: String, subtitle: String? = nil, keyGlyph: String?, handler: @escaping () -> Void) {
+        self.title = title
+        self.subtitle = subtitle
+        self.keyGlyph = keyGlyph
+        self.handler = handler
+    }
 }
 
 final class CommandMenuController: NSViewController {
@@ -25,6 +33,7 @@ final class CommandMenuController: NSViewController {
 
     private final class CommandMenuCellView: NSTableCellView {
         private let titleField = NSTextField(labelWithString: "")
+        private let subtitleField = NSTextField(labelWithString: "")
         private let keyLabel = NSTextField(labelWithString: "")
 
         override init(frame frameRect: NSRect) {
@@ -47,14 +56,29 @@ final class CommandMenuController: NSViewController {
             stack.spacing = 8
             stack.translatesAutoresizingMaskIntoConstraints = false
 
+            let textStack = NSStackView()
+            textStack.orientation = .vertical
+            textStack.alignment = .leading
+            textStack.spacing = 1
+            textStack.translatesAutoresizingMaskIntoConstraints = false
+
             titleField.font = NSFont.systemFont(ofSize: 13, weight: .medium)
             titleField.textColor = NSColor.white
             titleField.lineBreakMode = .byTruncatingTail
 
+            subtitleField.font = NSFont.systemFont(ofSize: 11)
+            subtitleField.textColor = NSColor.white.withAlphaComponent(0.7)
+            subtitleField.lineBreakMode = .byTruncatingTail
+            subtitleField.isHidden = true
+
             keyLabel.font = NSFont.monospacedSystemFont(ofSize: 12, weight: .regular)
             keyLabel.textColor = NSColor.white.withAlphaComponent(0.75)
+            keyLabel.setContentHuggingPriority(.required, for: .horizontal)
 
-            stack.addArrangedSubview(titleField)
+            textStack.addArrangedSubview(titleField)
+            textStack.addArrangedSubview(subtitleField)
+
+            stack.addArrangedSubview(textStack)
             stack.addArrangedSubview(keyLabel)
 
             addSubview(stack)
@@ -69,6 +93,13 @@ final class CommandMenuController: NSViewController {
 
         func configure(with item: CommandMenuItem) {
             titleField.stringValue = item.title
+            if let subtitle = item.subtitle, !subtitle.isEmpty {
+                subtitleField.stringValue = subtitle
+                subtitleField.isHidden = false
+            } else {
+                subtitleField.stringValue = ""
+                subtitleField.isHidden = true
+            }
             if let glyph = item.keyGlyph, !glyph.isEmpty {
                 keyLabel.stringValue = glyph
                 keyLabel.isHidden = false
@@ -87,6 +118,8 @@ final class CommandMenuController: NSViewController {
     private let preferredWidth: CGFloat = 260
     private let verticalPadding: CGFloat = 24
     private let maxVisibleItems = 6
+    private let singleLineRowHeight: CGFloat = 32
+    private let doubleLineRowHeight: CGFloat = 48
 
     var onDismiss: (() -> Void)?
 
@@ -179,7 +212,7 @@ final class CommandMenuController: NSViewController {
         tableView.allowsTypeSelect = false
         tableView.allowsEmptySelection = false
         tableView.selectionHighlightStyle = .regular
-        tableView.rowHeight = 32
+        tableView.rowHeight = singleLineRowHeight
         tableView.intercellSpacing = NSSize(width: 0, height: 4)
         tableView.delegate = self
         tableView.dataSource = self
@@ -201,14 +234,14 @@ final class CommandMenuController: NSViewController {
     }
 
     private func updatePreferredContentSize() {
-        let visibleCount = min(items.count, maxVisibleItems)
-        if visibleCount == 0 {
+        let visibleItems = Array(items.prefix(maxVisibleItems))
+        if visibleItems.isEmpty {
             preferredContentSize = NSSize(width: preferredWidth, height: verticalPadding)
             return
         }
 
-        let rowsHeight = CGFloat(visibleCount) * tableView.rowHeight
-        let spacing = CGFloat(max(visibleCount - 1, 0)) * tableView.intercellSpacing.height
+        let rowsHeight = visibleItems.reduce(0) { $0 + rowHeight(for: $1) }
+        let spacing = CGFloat(max(visibleItems.count - 1, 0)) * tableView.intercellSpacing.height
         let height = rowsHeight + spacing + verticalPadding
         preferredContentSize = NSSize(width: preferredWidth, height: height)
     }
@@ -243,10 +276,21 @@ extension CommandMenuController: NSTableViewDataSource, NSTableViewDelegate {
     func tableView(_ tableView: NSTableView, shouldSelectRow row: Int) -> Bool {
         return row >= 0 && row < items.count
     }
+
+    func tableView(_ tableView: NSTableView, heightOfRow row: Int) -> CGFloat {
+        guard row >= 0, row < items.count else { return singleLineRowHeight }
+        return rowHeight(for: items[row])
+    }
 }
 
 extension CommandMenuController: NSPopoverDelegate {
     func popoverDidClose(_ notification: Notification) {
         onDismiss?()
+    }
+}
+
+private extension CommandMenuController {
+    func rowHeight(for item: CommandMenuItem) -> CGFloat {
+        return item.subtitle == nil ? singleLineRowHeight : doubleLineRowHeight
     }
 }

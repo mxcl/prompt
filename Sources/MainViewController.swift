@@ -571,14 +571,23 @@ class MainViewController: NSViewController {
         var menuItems: [CommandMenuItem] = []
         let hints = result.actionHints
 
+        let caskContext: (cask: CaskData.CaskItem, homepage: String?, brewURL: String?)?
+        if case .availableCask(let cask) = result {
+            let homepage = SearchResult.sanitizedSubtitleComponent(cask.homepage)
+            let brewURL = caskBrewPageURL(for: cask)?.absoluteString
+            caskContext = (cask, homepage, brewURL)
+        } else {
+            caskContext = nil
+        }
+
         if let primaryHint = hints.first {
-            menuItems.append(CommandMenuItem(title: primaryHint.text, keyGlyph: primaryHint.keyGlyph) { [weak self] in
+            menuItems.append(CommandMenuItem(title: primaryHint.text, subtitle: caskContext?.homepage, keyGlyph: primaryHint.keyGlyph) { [weak self] in
                 guard let self = self else { return }
                 let commandText = self.searchField.stringValue
                 _ = result.handlePrimaryAction(commandText: commandText, controller: self)
             })
         } else {
-            menuItems.append(CommandMenuItem(title: result.enterActionHint, keyGlyph: "⏎") { [weak self] in
+            menuItems.append(CommandMenuItem(title: result.enterActionHint, subtitle: caskContext?.homepage, keyGlyph: "⏎") { [weak self] in
                 guard let self = self else { return }
                 let commandText = self.searchField.stringValue
                 _ = result.handlePrimaryAction(commandText: commandText, controller: self)
@@ -594,10 +603,10 @@ class MainViewController: NSViewController {
             })
         }
 
-        if case .availableCask(let cask) = result,
-           !cask.token.isEmpty {
-            menuItems.append(CommandMenuItem(title: "Open on brew.sh", keyGlyph: nil) { [weak self] in
-                _ = self?.openCaskBrewPage(cask)
+        if let context = caskContext,
+           !context.cask.token.isEmpty {
+            menuItems.append(CommandMenuItem(title: "Open on brew.sh", subtitle: context.brewURL, keyGlyph: nil) { [weak self] in
+                _ = self?.openCaskBrewPage(context.cask)
             })
         }
 
@@ -911,7 +920,12 @@ class MainViewController: NSViewController {
     }
 
     func openCaskBrewPage(_ cask: CaskData.CaskItem) -> Bool {
-        guard !cask.token.isEmpty else { return false }
+        guard let url = caskBrewPageURL(for: cask) else { return false }
+        return NSWorkspace.shared.open(url)
+    }
+
+    private func caskBrewPageURL(for cask: CaskData.CaskItem) -> URL? {
+        guard !cask.token.isEmpty else { return nil }
 
         var components = URLComponents()
         components.scheme = "https"
@@ -919,8 +933,7 @@ class MainViewController: NSViewController {
         let encodedToken = cask.token.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? cask.token
         components.path = "/cask/\(encodedToken)"
 
-        guard let url = components.url else { return false }
-        return NSWorkspace.shared.open(url)
+        return components.url
     }
 
     private func resolveInstalledAppURL(for cask: CaskData.CaskItem) -> URL? {
