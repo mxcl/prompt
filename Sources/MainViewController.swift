@@ -837,14 +837,17 @@ extension MainViewController: NSTextFieldDelegate {
         switch commandSelector {
         case #selector(NSResponder.moveDown(_:)): // Down arrow
             if apps.count > 0 {
-                view.window?.makeFirstResponder(tableView)
-                if tableView.selectedRow == -1 {
-                    tableView.selectRowIndexes(IndexSet(integer: 0), byExtendingSelection: false)
+                if tableView.selectedRow != 0 {
                     tableView.scrollRowToVisible(0)
-                } else if let event = NSApp.currentEvent, event.type == .keyDown {
-                    tableView.keyDown(with: event)
+                    tableView.selectRowIndexes(IndexSet(integer: 0), byExtendingSelection: false)
+                    view.window?.makeFirstResponder(tableView)
                 } else {
-                    tableView.moveDown(nil)
+                    view.window?.makeFirstResponder(tableView)
+                    if let event = NSApp.currentEvent, event.type == .keyDown {
+                        tableView.keyDown(with: event)
+                    } else {
+                        tableView.moveDown(nil)
+                    }
                 }
             }
             return true
