@@ -359,13 +359,8 @@ final class SearchResultCellView: NSTableCellView {
         }
         hintViews.removeAll()
 
-        for (index, hint) in actionHints.enumerated() {
+        for hint in actionHints {
             let view = makeHintView(for: hint)
-            if index > 0 {
-                let divider = makeHintDivider()
-                actionHintStack.addArrangedSubview(divider)
-                hintViews.append(divider)
-            }
             actionHintStack.addArrangedSubview(view)
             hintViews.append(view)
         }
@@ -388,15 +383,4 @@ final class SearchResultCellView: NSTableCellView {
         return stack
     }
 
-    private func makeHintDivider() -> NSView {
-        let divider = NSView()
-        divider.translatesAutoresizingMaskIntoConstraints = false
-        divider.wantsLayer = true
-        divider.layer?.backgroundColor = NSColor.white.withAlphaComponent(0.18).cgColor
-        NSLayoutConstraint.activate([
-            divider.widthAnchor.constraint(equalToConstant: 1),
-            divider.heightAnchor.constraint(equalToConstant: 18)
-        ])
-        return divider
-    }
 }
