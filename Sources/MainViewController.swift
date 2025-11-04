@@ -92,7 +92,7 @@ class NavigableTableView: NSTableView {
         default:
             if modifiers.contains(.command),
                let characters = event.charactersIgnoringModifiers?.lowercased(),
-               characters == "a" {
+               (characters == "a" || characters == "l") {
                 navigationDelegate?.tableViewShouldSelectAllText(self)
                 return
             }
