@@ -3,8 +3,6 @@ import Cocoa
 private enum CommandMenuMetrics {
     static let titleFont = NSFont.systemFont(ofSize: 13, weight: .medium)
     static let subtitleFont = NSFont.systemFont(ofSize: 11)
-    static let keyFont = NSFont.monospacedSystemFont(ofSize: 12, weight: .regular)
-    static let keySpacing: CGFloat = 8
     static let horizontalContentPadding: CGFloat = 24
 }
 
@@ -42,7 +40,6 @@ final class CommandMenuController: NSViewController {
     private final class CommandMenuCellView: NSTableCellView {
         private let titleField = NSTextField(labelWithString: "")
         private let subtitleField = NSTextField(labelWithString: "")
-        private let keyLabel = NSTextField(labelWithString: "")
 
         override init(frame frameRect: NSRect) {
             super.init(frame: frameRect)
@@ -57,12 +54,6 @@ final class CommandMenuController: NSViewController {
         private func setup() {
             wantsLayer = true
             translatesAutoresizingMaskIntoConstraints = false
-
-            let stack = NSStackView()
-            stack.orientation = .horizontal
-            stack.alignment = .centerY
-            stack.spacing = 8
-            stack.translatesAutoresizingMaskIntoConstraints = false
 
             let textStack = NSStackView()
             textStack.orientation = .vertical
@@ -79,23 +70,16 @@ final class CommandMenuController: NSViewController {
             subtitleField.lineBreakMode = .byTruncatingTail
             subtitleField.isHidden = true
 
-            keyLabel.font = CommandMenuMetrics.keyFont
-            keyLabel.textColor = NSColor.white.withAlphaComponent(0.75)
-            keyLabel.setContentHuggingPriority(.required, for: .horizontal)
-
             textStack.addArrangedSubview(titleField)
             textStack.addArrangedSubview(subtitleField)
 
-            stack.addArrangedSubview(textStack)
-            stack.addArrangedSubview(keyLabel)
-
-            addSubview(stack)
+            addSubview(textStack)
 
             NSLayoutConstraint.activate([
-                stack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 4),
-                stack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -4),
-                stack.topAnchor.constraint(equalTo: topAnchor, constant: 2),
-                stack.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -2)
+                textStack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 4),
+                textStack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -4),
+                textStack.topAnchor.constraint(equalTo: topAnchor, constant: 2),
+                textStack.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -2)
             ])
         }
 
@@ -108,12 +92,7 @@ final class CommandMenuController: NSViewController {
                 subtitleField.stringValue = ""
                 subtitleField.isHidden = true
             }
-            if let glyph = item.keyGlyph, !glyph.isEmpty {
-                keyLabel.stringValue = glyph
-                keyLabel.isHidden = false
-            } else {
-                keyLabel.isHidden = true
-            }
+            // keyboard glyphs intentionally not shown in the command menu popover
         }
     }
 
@@ -326,14 +305,7 @@ private extension CommandMenuController {
         if let subtitle = item.subtitle, !subtitle.isEmpty {
             contentWidth = max(contentWidth, textWidth(for: subtitle, font: CommandMenuMetrics.subtitleFont))
         }
-        let keyWidth = glyphWidth(for: item.keyGlyph)
-        return contentWidth + keyWidth + CommandMenuMetrics.horizontalContentPadding
-    }
-
-    func glyphWidth(for glyph: String?) -> CGFloat {
-        guard let glyph = glyph, !glyph.isEmpty else { return 0 }
-        let glyphWidth = textWidth(for: glyph, font: CommandMenuMetrics.keyFont)
-        return glyphWidth + CommandMenuMetrics.keySpacing
+        return contentWidth + CommandMenuMetrics.horizontalContentPadding
     }
 
     func textWidth(for text: String, font: NSFont) -> CGFloat {
