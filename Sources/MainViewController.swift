@@ -679,7 +679,7 @@ class MainViewController: NSViewController {
         return rect
     }
 
-    private func revealInFinder(path: String) {
+    func revealInFinder(path: String) {
         let url = URL(fileURLWithPath: path)
         NSWorkspace.shared.activateFileViewerSelecting([url])
     }

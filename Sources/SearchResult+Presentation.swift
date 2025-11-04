@@ -122,6 +122,12 @@ extension SearchResult {
 
     var actionHints: [SearchResultCellView.ActionHint] {
         switch self {
+        case .installedAppMetadata(_, let path, _, _, _):
+            var hints = [SearchResultCellView.ActionHint(keyGlyph: "⏎", text: enterActionHint)]
+            if let path, !path.isEmpty {
+                hints.append(SearchResultCellView.ActionHint(keyGlyph: "⌥⏎", text: "Reveal in Finder"))
+            }
+            return hints
         case .availableCask:
             return [
                 SearchResultCellView.ActionHint(keyGlyph: "⏎", text: "Homepage"),
@@ -193,6 +199,12 @@ extension SearchResult {
     @discardableResult
     func handleAlternateAction(commandText: String, controller: MainViewController) -> Bool {
         switch self {
+        case .installedAppMetadata(_, let path, _, _, _):
+            if let path, !path.isEmpty {
+                controller.revealInFinder(path: path)
+                return true
+            }
+            return handlePrimaryAction(commandText: commandText, controller: controller)
         case .availableCask(let cask):
             guard controller.installCask(cask) else { return false }
             let subtitle = SearchResult.subtitleForCask(cask)
