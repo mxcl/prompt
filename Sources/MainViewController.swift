@@ -1405,7 +1405,9 @@ extension MainViewController: NSTextFieldDelegate {
                 return true
             }
             return false
-        case #selector(NSResponder.insertLineBreak(_:)): // Option + Enter
+        case #selector(NSResponder.insertLineBreak(_:)),
+             #selector(NSResponder.insertNewlineIgnoringFieldEditor(_:)),
+             #selector(NSResponder.insertParagraphSeparator(_:)): // Option + Enter variants
             _ = handleSearchFieldAlternateAction()
             return true
         case #selector(NSResponder.insertNewline(_:)): // Enter key
