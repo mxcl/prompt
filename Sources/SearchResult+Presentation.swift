@@ -77,6 +77,11 @@ extension SearchResult {
         }
 
         cell.setActionHints(hints)
+#if DEBUG
+        cell.setSearchRank(SearchConductor.shared.score(for: self))
+#else
+        cell.setSearchRank(nil)
+#endif
     }
 
     var preferredRowHeight: CGFloat {
@@ -146,11 +151,6 @@ extension SearchResult {
     }
 
     private func decoratedTitle(for base: String) -> String {
-        #if DEBUG
-        if let score = SearchConductor.shared.score(for: self) {
-            return "\(base) [\(score)]"
-        }
-        #endif
         return base
     }
 

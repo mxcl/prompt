@@ -4,18 +4,22 @@ private final class PillTagView: NSView {
     private let label: NSTextField
     private let horizontalPadding: CGFloat = 4
     private let verticalPadding: CGFloat = 3
-    private let text: String
     private let letterSpacing: CGFloat = 1.05
+    private var text: String
+    private let textAlpha: CGFloat
+    private let backgroundAlpha: CGFloat
 
-    init(text: String) {
+    init(text: String, textAlpha: CGFloat = 0.7, backgroundAlpha: CGFloat = 0.18) {
         self.text = text
+        self.textAlpha = textAlpha
+        self.backgroundAlpha = backgroundAlpha
         label = NSTextField(labelWithString: "")
         super.init(frame: .zero)
         wantsLayer = true
         translatesAutoresizingMaskIntoConstraints = false
 
         label.font = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize - 4, weight: .medium)
-        label.textColor = NSColor.white.withAlphaComponent(0.7)
+        label.textColor = NSColor.white.withAlphaComponent(textAlpha)
         label.alignment = .center
         label.translatesAutoresizingMaskIntoConstraints = false
         applyAttributedText()
@@ -46,7 +50,12 @@ private final class PillTagView: NSView {
     override func layout() {
         super.layout()
         layer?.cornerRadius = min(5, bounds.height / 2)
-        layer?.backgroundColor = NSColor.white.withAlphaComponent(0.18).cgColor
+        layer?.backgroundColor = NSColor.white.withAlphaComponent(backgroundAlpha).cgColor
+    }
+
+    func setText(_ newText: String) {
+        text = newText
+        applyAttributedText()
     }
 
     private func applyAttributedText() {
@@ -199,6 +208,9 @@ final class SearchResultCellView: NSTableCellView {
     private let titleStack = NSStackView()
     private let recentTagView = PillTagView(text: "recent")
     private let deprecatedTagView = PillTagView(text: "deprecated")
+#if DEBUG
+    private let searchRankTagView = PillTagView(text: "", textAlpha: 0.6, backgroundAlpha: 0.12)
+#endif
     private let commandMenuHintView = KeycapLabel(text: "→")
 
     private var titleTrailingToHint: NSLayoutConstraint!
@@ -258,6 +270,10 @@ final class SearchResultCellView: NSTableCellView {
         recentTagView.isHidden = true
         titleStack.addArrangedSubview(deprecatedTagView)
         deprecatedTagView.isHidden = true
+#if DEBUG
+        titleStack.addArrangedSubview(searchRankTagView)
+        searchRankTagView.isHidden = true
+#endif
         addSubview(titleStack)
 
         actionHintStack.orientation = .horizontal
@@ -388,12 +404,24 @@ final class SearchResultCellView: NSTableCellView {
         updateActionHintVisibility()
     }
 
+    func setSearchRank(_ score: Int?) {
+#if DEBUG
+        if let score {
+            searchRankTagView.setText("\(score)")
+            searchRankTagView.isHidden = false
+        } else {
+            searchRankTagView.isHidden = true
+        }
+#endif
+    }
+
     override func prepareForReuse() {
         super.prepareForReuse()
         setActionHints([])
         setShowsCommandMenuHint(true)
         setDeprecatedTagVisible(false)
         setRecentTagVisible(false)
+        setSearchRank(nil)
     }
 
     override var backgroundStyle: NSView.BackgroundStyle {
