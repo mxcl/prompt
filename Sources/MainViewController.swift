@@ -500,7 +500,23 @@ class MainViewController: NSViewController {
         guard selectedRow >= 0 && selectedRow < apps.count else { return false }
         tableView.selectRowIndexes(IndexSet(integer: selectedRow), byExtendingSelection: false)
         tableView.scrollRowToVisible(selectedRow)
+        if case .filesystemEntry(let entry) = apps[selectedRow], entry.isDirectory {
+            drillDownIntoDirectory(entry.url)
+            return true
+        }
         return showCommandMenu(forRow: selectedRow, focusTarget: .searchField)
+    }
+
+    private func handleSearchFieldAlternateAction() -> Bool {
+        guard apps.count > 0 else { return false }
+        var selectedRow = tableView.selectedRow
+        if selectedRow < 0 {
+            selectedRow = 0
+            tableView.selectRowIndexes(IndexSet(integer: selectedRow), byExtendingSelection: false)
+            tableView.scrollRowToVisible(selectedRow)
+        }
+        tableViewShouldPerformAlternateAction(tableView)
+        return true
     }
 
     private func isCursorAtEnd(textView: NSTextView) -> Bool {
@@ -804,24 +820,76 @@ class MainViewController: NSViewController {
         return NSWorkspace.shared.open(url)
     }
 
-    func drillDownIntoDirectory(_ url: URL) {
-        var path = url.path
-        if !path.hasSuffix("/") {
-            path.append("/")
+    @discardableResult
+    func openDirectoryInFinder(_ url: URL) -> Bool {
+        return NSWorkspace.shared.open(url)
+    }
+
+    @discardableResult
+    func openDirectoryInVSCode(_ url: URL) -> Bool {
+        let bundleIdentifiers = ["com.microsoft.VSCode", "com.microsoft.VSCodeInsiders"]
+        let workspace = NSWorkspace.shared
+
+        if #available(macOS 10.15, *) {
+            let configuration = NSWorkspace.OpenConfiguration()
+            configuration.activates = true
+            configuration.addsToRecentItems = false
+            configuration.createsNewApplicationInstance = false
+            for bundleID in bundleIdentifiers {
+                if let appURL = workspace.urlForApplication(withBundleIdentifier: bundleID) {
+                    workspace.open([url], withApplicationAt: appURL, configuration: configuration, completionHandler: nil)
+                    return true
+                }
+            }
+        } else {
+            for bundleID in bundleIdentifiers {
+                let task = Process()
+                task.launchPath = "/usr/bin/open"
+                task.arguments = ["-b", bundleID, url.path]
+                do {
+                    try task.run()
+                    return true
+                } catch {
+                    continue
+                }
+            }
         }
 
+        let fallbackNames = ["Visual Studio Code", "Visual Studio Code - Insiders"]
+        for appName in fallbackNames {
+            let task = Process()
+            task.launchPath = "/usr/bin/open"
+            task.arguments = ["-a", appName, url.path]
+            do {
+                try task.run()
+                return true
+            } catch {
+                continue
+            }
+        }
+
+        return false
+    }
+
+    func drillDownIntoDirectory(_ url: URL) {
+        var absolutePath = url.path
+        if !absolutePath.hasSuffix("/") {
+            absolutePath.append("/")
+        }
+        let displayPath = replacingHomeDirectoryPath(in: absolutePath)
+
         suppressNextManualUpdate = true
-        searchField.stringValue = path
-        lastManualQuery = path
+        searchField.stringValue = displayPath
+        lastManualQuery = displayPath
         preferredHistoryCommand = nil
         preferredHistoryQuery = nil
 
-        performSearch(path)
+        performSearch(displayPath)
 
         if let window = view.window {
             window.makeFirstResponder(searchField)
             if let editor = window.fieldEditor(true, for: searchField) as? NSTextView {
-                editor.selectedRange = NSRange(location: path.count, length: 0)
+                editor.selectedRange = NSRange(location: displayPath.count, length: 0)
             }
         }
     }
@@ -930,6 +998,20 @@ class MainViewController: NSViewController {
         print("[Launch] launch failed for bundleId=\(bundleId ?? "nil") path=\(path ?? "nil")")
         #endif
         return false
+    }
+
+    private func replacingHomeDirectoryPath(in path: String) -> String {
+        let homePath = FileManager.default.homeDirectoryForCurrentUser.path
+        guard !homePath.isEmpty, path.hasPrefix(homePath) else { return path }
+
+        let suffix = path.dropFirst(homePath.count)
+        if suffix.isEmpty {
+            return "~"
+        }
+        if suffix.first == "/" {
+            return "~" + suffix
+        }
+        return "~/" + suffix
     }
 
     func openCaskHomepage(_ cask: CaskData.CaskItem) -> Bool {
@@ -1164,8 +1246,14 @@ extension MainViewController: NSTableViewDelegate {
         cell.identifier = identifier
 
         let hasMultipleMenuItems = commandMenuItems(for: result).count > 1
+        let isDirectoryResult: Bool
+        if case .filesystemEntry(let entry) = result {
+            isDirectoryResult = entry.isDirectory
+        } else {
+            isDirectoryResult = false
+        }
         result.configureCell(cell, controller: self)
-        cell.setShowsCommandMenuHint(hasMultipleMenuItems)
+        cell.setShowsCommandMenuHint(hasMultipleMenuItems && !isDirectoryResult)
         return cell
     }
 
@@ -1218,7 +1306,17 @@ extension MainViewController: NSTextFieldDelegate {
                 return true
             }
             return false
+        case #selector(NSResponder.insertLineBreak(_:)): // Option + Enter
+            _ = handleSearchFieldAlternateAction()
+            return true
         case #selector(NSResponder.insertNewline(_:)): // Enter key
+            if let event = NSApp.currentEvent {
+                let modifiers = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+                if modifiers.contains(.option) {
+                    _ = handleSearchFieldAlternateAction()
+                    return true
+                }
+            }
             let current = searchField.stringValue
             if openURLIfPossible(from: current) {
                 return true
@@ -1284,6 +1382,11 @@ extension MainViewController: TableViewNavigationDelegate {
 
     func tableView(_ tableView: NSTableView, didRequestCommandMenuForRow row: Int) -> Bool {
         guard tableView === self.tableView else { return false }
+        guard row >= 0 && row < apps.count else { return false }
+        if case .filesystemEntry(let entry) = apps[row], entry.isDirectory {
+            drillDownIntoDirectory(entry.url)
+            return true
+        }
         if commandMenuController.isShown, commandMenuAnchorRow == row {
             dismissCommandMenu(focusTarget: .tableView)
             return true
