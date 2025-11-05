@@ -157,25 +157,19 @@ extension SearchResult {
     @discardableResult
     func handlePrimaryAction(commandText: String, controller: MainViewController) -> Bool {
         switch self {
-        case .installedAppMetadata(let name, let path, let bundleID, let appDescription, let cask):
+        case .installedAppMetadata(_, let path, let bundleID, let appDescription, let cask):
             guard controller.launchInstalledApp(bundleId: bundleID, path: path) else { return false }
             let subtitle = SearchResult.subtitleForInstalledApp(path: path, description: appDescription)
-            let context = CommandHistoryEntry.Context.installedApp(
-                name: name,
-                path: path,
-                bundleID: bundleID,
-                description: appDescription,
-                caskToken: cask?.token
-            )
-            controller.recordSuccessfulRun(command: commandText, displayName: displayName, subtitle: subtitle, context: context)
+            let targetURL = path.map { URL(fileURLWithPath: $0) }
+            controller.recordSuccessfulRun(command: commandText, displayName: displayName, subtitle: subtitle, targetURL: targetURL)
             controller.resetSearchFieldAndResults()
             return true
 
         case .availableCask(let cask):
             guard controller.openCaskHomepage(cask) else { return false }
             let subtitle = SearchResult.subtitleForCask(cask)
-            let context = CommandHistoryEntry.Context.availableCask(token: cask.token)
-            controller.recordSuccessfulRun(command: commandText, displayName: displayName, subtitle: subtitle, context: context)
+            let targetURL = controller.caskBrewPageURL(for: cask)
+            controller.recordSuccessfulRun(command: commandText, displayName: displayName, subtitle: subtitle, targetURL: targetURL)
             controller.resetSearchFieldAndResults()
             return true
 
@@ -195,7 +189,7 @@ extension SearchResult {
             } else {
                 guard controller.openFile(at: entry.url) else { return false }
             }
-            controller.recordSuccessfulRun(command: entry.url.path, displayName: entry.displayName, subtitle: subtitle)
+            controller.recordSuccessfulRun(command: entry.url.path, displayName: entry.displayName, subtitle: subtitle, targetURL: entry.url)
             controller.resetSearchFieldAndResults()
             return true
 
@@ -214,17 +208,10 @@ extension SearchResult {
             }
             return handlePrimaryAction(commandText: commandText, controller: controller)
         case .availableCask(let cask):
-            guard let context = controller.installCask(cask) else { return false }
-            let subtitle: String?
-            let recordedName: String
-            if case let .installedApp(name, path, _, description, _) = context {
-                subtitle = SearchResult.subtitleForInstalledApp(path: path, description: description)
-                recordedName = name
-            } else {
-                subtitle = SearchResult.subtitleForCask(cask)
-                recordedName = displayName
-            }
-            controller.recordSuccessfulRun(command: commandText, displayName: recordedName, subtitle: subtitle, context: context)
+            guard let installResult = controller.installCask(cask) else { return false }
+            let subtitle = SearchResult.subtitleForInstalledApp(path: installResult.path, description: installResult.description)
+            let targetURL = URL(fileURLWithPath: installResult.path)
+            controller.recordSuccessfulRun(command: commandText, displayName: installResult.name, subtitle: subtitle, targetURL: targetURL)
             controller.resetSearchFieldAndResults()
             return true
         case .historyCommand(let command, let display, _, _, _):
@@ -236,12 +223,12 @@ extension SearchResult {
             if entry.isDirectory {
                 let subtitle = SearchResult.subtitleForFilesystemEntry(entry)
                 if controller.openDirectoryInVSCode(entry.url) {
-                    controller.recordSuccessfulRun(command: entry.url.path, displayName: entry.displayName, subtitle: subtitle)
+                    controller.recordSuccessfulRun(command: entry.url.path, displayName: entry.displayName, subtitle: subtitle, targetURL: entry.url)
                     controller.resetSearchFieldAndResults()
                     return true
                 }
                 guard controller.openDirectoryInFinder(entry.url) else { return false }
-                controller.recordSuccessfulRun(command: entry.url.path, displayName: entry.displayName, subtitle: subtitle)
+                controller.recordSuccessfulRun(command: entry.url.path, displayName: entry.displayName, subtitle: subtitle, targetURL: entry.url)
                 controller.resetSearchFieldAndResults()
                 return true
             }

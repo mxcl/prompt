@@ -1,5 +1,13 @@
 import Cocoa
 
+struct InstalledAppLaunchResult {
+    let name: String
+    let path: String
+    let bundleID: String?
+    let description: String?
+    let caskToken: String?
+}
+
 // Custom table view that can navigate back to search field
 class NavigableTableView: NSTableView {
     weak var navigationDelegate: TableViewNavigationDelegate?
@@ -445,17 +453,17 @@ class MainViewController: NSViewController {
         return nil
     }
 
-    func recordSuccessfulRun(command: String, displayName: String? = nil, subtitle: String? = nil, context: CommandHistoryEntry.Context? = nil) {
+    func recordSuccessfulRun(command: String, displayName: String? = nil, subtitle: String? = nil, targetURL: URL? = nil) {
         let trimmed = command.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
-        #if DEBUG
+#if DEBUG
         if let displayName, !displayName.isEmpty {
             print("[CommandHistory] Recording command='\(trimmed)' display='\(displayName)'")
         } else {
             print("[CommandHistory] Recording command='\(trimmed)'")
         }
-        #endif
-        commandHistory.record(command: trimmed, display: displayName, subtitle: subtitle, context: context)
+#endif
+        commandHistory.record(command: trimmed, display: displayName, subtitle: subtitle, targetURL: targetURL)
     }
 
     func shouldUseReducedRecentFont(isRecentResult: Bool) -> Bool {
@@ -839,7 +847,7 @@ class MainViewController: NSViewController {
         let success = NSWorkspace.shared.open(url)
         if success {
             let subtitle = SearchResult.subtitleForURL(url)
-            recordSuccessfulRun(command: originalInput, displayName: url.absoluteString, subtitle: subtitle)
+            recordSuccessfulRun(command: originalInput, displayName: url.absoluteString, subtitle: subtitle, targetURL: url)
             resetSearchFieldAndResults()
         }
         return success
@@ -1107,7 +1115,7 @@ class MainViewController: NSViewController {
         return NSWorkspace.shared.open(url)
     }
 
-    func installCask(_ cask: CaskData.CaskItem) -> CommandHistoryEntry.Context? {
+    func installCask(_ cask: CaskData.CaskItem) -> InstalledAppLaunchResult? {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
         process.arguments = ["brew", "install", "--cask", cask.token]
@@ -1146,7 +1154,7 @@ class MainViewController: NSViewController {
         return NSWorkspace.shared.open(url)
     }
 
-    private func caskBrewPageURL(for cask: CaskData.CaskItem) -> URL? {
+    func caskBrewPageURL(for cask: CaskData.CaskItem) -> URL? {
         guard !cask.token.isEmpty else { return nil }
 
         var components = URLComponents()
@@ -1216,11 +1224,11 @@ class MainViewController: NSViewController {
         }
     }
 
-    private func installedAppContext(for cask: CaskData.CaskItem, installedURL url: URL) -> CommandHistoryEntry.Context {
+    private func installedAppContext(for cask: CaskData.CaskItem, installedURL url: URL) -> InstalledAppLaunchResult {
         let bundle = Bundle(url: url)
         let bundleID = bundle?.bundleIdentifier
         let resolvedName = resolvedInstalledAppName(bundle: bundle, fallbackName: cask.displayName, appURL: url)
-        return .installedApp(
+        return InstalledAppLaunchResult(
             name: resolvedName,
             path: url.path,
             bundleID: bundleID,

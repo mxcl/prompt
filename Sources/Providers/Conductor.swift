@@ -31,7 +31,7 @@ final class SearchConductor {
                         command: entry.command,
                         display: entry.display,
                         subtitle: entry.subtitle,
-                        context: entry.context,
+                        storedURL: entry.storedURL,
                         isRecent: true
                     )
                 }

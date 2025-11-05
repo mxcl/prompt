@@ -4,7 +4,7 @@ import Foundation
 enum SearchResult {
     case installedAppMetadata(name: String, path: String?, bundleID: String?, description: String?, cask: CaskData.CaskItem?)
     case availableCask(CaskData.CaskItem)
-    case historyCommand(command: String, display: String?, subtitle: String?, context: CommandHistoryEntry.Context?, isRecent: Bool)
+    case historyCommand(command: String, display: String?, subtitle: String?, storedURL: URL?, isRecent: Bool)
     case url(URL)
     case filesystemEntry(FileSystemEntry)
 
@@ -109,8 +109,22 @@ extension SearchResult {
 
 extension SearchResult {
     var historyContextResult: SearchResult? {
-        guard case .historyCommand(_, _, _, let context, _) = self else { return nil }
-        return context?.resolvedSearchResult()
+        guard case .historyCommand(_, _, _, let storedURL, _) = self,
+              let url = storedURL else { return nil }
+        return SearchResult.historyResult(forHistoryURL: url)
+    }
+
+    static func historyResult(forHistoryURL url: URL) -> SearchResult? {
+        if let cask = caskFromHistoryURL(url) {
+            return .availableCask(cask)
+        }
+        if url.isFileURL {
+            return historyResultForFileURL(url)
+        }
+        if isWebURL(url) {
+            return .url(url)
+        }
+        return nil
     }
 
     var installedAppPath: String? {
@@ -123,22 +137,91 @@ extension SearchResult {
             return nil
         }
     }
-}
 
-extension CommandHistoryEntry.Context {
-    func resolvedSearchResult() -> SearchResult? {
-        switch self {
-        case .availableCask(let token):
-            guard let cask = CaskStore.shared.lookup(byNameOrToken: token) else { return nil }
-            return .availableCask(cask)
-        case .installedApp(let name, let path, let bundleID, let description, let caskToken):
-            let cask: CaskData.CaskItem?
-            if let token = caskToken {
-                cask = CaskStore.shared.lookup(byNameOrToken: token)
-            } else {
-                cask = nil
-            }
-            return .installedAppMetadata(name: name, path: path, bundleID: bundleID, description: description, cask: cask)
+    private static func caskFromHistoryURL(_ url: URL) -> CaskData.CaskItem? {
+        guard let host = url.host?.lowercased(), host == "formulae.brew.sh" else { return nil }
+        let components = url.path.split(separator: "/")
+        guard components.count >= 2 else { return nil }
+        guard components[0].lowercased() == "cask" else { return nil }
+        let tokenComponent = components[1]
+        let decodedToken = tokenComponent.removingPercentEncoding ?? String(tokenComponent)
+        return CaskStore.shared.lookup(byNameOrToken: decodedToken)
+    }
+
+    private static func historyResultForFileURL(_ url: URL) -> SearchResult? {
+        let fileManager = FileManager.default
+        var isDirectory = ObjCBool(false)
+        guard fileManager.fileExists(atPath: url.path, isDirectory: &isDirectory) else {
+            return nil
         }
+        if url.pathExtension.lowercased() == "app" {
+            if let installedApp = installedAppResult(for: url) {
+                return installedApp
+            }
+        }
+        let entry = FileSystemEntry(url: url, isDirectory: isDirectory.boolValue)
+        return .filesystemEntry(entry)
+    }
+
+    private static func installedAppResult(for url: URL) -> SearchResult? {
+        let fileManager = FileManager.default
+        var isDirectory = ObjCBool(false)
+        guard fileManager.fileExists(atPath: url.path, isDirectory: &isDirectory), isDirectory.boolValue else {
+            return nil
+        }
+        let bundle = Bundle(url: url)
+        let fallbackName = url.deletingPathExtension().lastPathComponent
+        let name = installedAppDisplayName(bundle: bundle, fallbackName: fallbackName)
+        let bundleID = bundle?.bundleIdentifier
+        let bundleDescription = installedAppDescription(bundle: bundle)
+        let cask = caskForAppURL(url)
+        let finalDescription = bundleDescription ?? cask?.desc
+        return .installedAppMetadata(
+            name: name,
+            path: url.path,
+            bundleID: bundleID,
+            description: finalDescription,
+            cask: cask
+        )
+    }
+
+    private static func installedAppDisplayName(bundle: Bundle?, fallbackName: String) -> String {
+        if let displayName = bundle?.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String,
+           !displayName.isEmpty {
+            return displayName
+        }
+        if let bundleName = bundle?.object(forInfoDictionaryKey: "CFBundleName") as? String,
+           !bundleName.isEmpty {
+            return bundleName
+        }
+        return fallbackName
+    }
+
+    private static func installedAppDescription(bundle: Bundle?) -> String? {
+        if let infoString = bundle?.object(forInfoDictionaryKey: "CFBundleGetInfoString") as? String,
+           !infoString.isEmpty {
+            return infoString
+        }
+        if let shortVersion = bundle?.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String,
+           !shortVersion.isEmpty,
+           let name = bundle?.object(forInfoDictionaryKey: "CFBundleName") as? String,
+           !name.isEmpty {
+            return "\(name) \(shortVersion)"
+        }
+        return nil
+    }
+
+    private static func caskForAppURL(_ url: URL) -> CaskData.CaskItem? {
+        let filename = url.lastPathComponent
+        if let match = CaskStore.shared.lookupByAppFilename(filename) {
+            return match
+        }
+        let basename = (filename as NSString).deletingPathExtension
+        return CaskStore.shared.lookup(byNameOrToken: basename)
+    }
+
+    private static func isWebURL(_ url: URL) -> Bool {
+        guard let scheme = url.scheme?.lowercased() else { return false }
+        return scheme == "http" || scheme == "https"
     }
 }

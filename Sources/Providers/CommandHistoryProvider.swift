@@ -47,7 +47,7 @@ final class CommandHistoryProvider: SearchProvider {
                 command: command,
                 display: entry.display,
                 subtitle: entry.subtitle,
-                context: entry.context,
+                storedURL: entry.storedURL,
                 isRecent: candidate.isRecent
             )
             results.append(ProviderResult(source: .commandHistory, result: result, score: score))
@@ -64,8 +64,8 @@ final class CommandHistoryProvider: SearchProvider {
     }
 
     private func isDeprecatedCask(entry: CommandHistoryEntry) -> Bool {
-        guard let context = entry.context else { return false }
-        guard let matchedCask = context.resolvedSearchResult()?.matchedCask else { return false }
+        guard let url = entry.storedURL else { return false }
+        guard let matchedCask = SearchResult.historyResult(forHistoryURL: url)?.matchedCask else { return false }
         return matchedCask.isDeprecated
     }
 }

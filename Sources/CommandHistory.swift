@@ -4,16 +4,63 @@ struct CommandHistoryEntry: Codable {
     let command: String
     let display: String?
     let subtitle: String?
-    let context: Context?
+    private let targetURLString: String?
+    private let legacyContext: LegacyContext?
 
-    init(command: String, display: String?, subtitle: String?, context: Context? = nil) {
+    init(command: String, display: String?, subtitle: String?, targetURL: URL?) {
         self.command = command
         self.display = display
         self.subtitle = subtitle
-        self.context = context
+        self.targetURLString = targetURL?.absoluteString
+        self.legacyContext = nil
     }
 
-    enum Context: Codable {
+    var storedURL: URL? {
+        if let targetURLString, let url = URL(string: targetURLString) {
+            return url
+        }
+        return legacyContext?.urlRepresentation
+    }
+
+    var needsLegacyMigration: Bool {
+        return targetURLString == nil && legacyContext != nil
+    }
+
+    func updatingTargetURL(_ url: URL?) -> CommandHistoryEntry {
+        return CommandHistoryEntry(
+            command: command,
+            display: display,
+            subtitle: subtitle,
+            targetURL: url
+        )
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case command
+        case display
+        case subtitle
+        case targetURLString
+        case context
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        command = try container.decode(String.self, forKey: .command)
+        display = try container.decodeIfPresent(String.self, forKey: .display)
+        subtitle = try container.decodeIfPresent(String.self, forKey: .subtitle)
+        targetURLString = try container.decodeIfPresent(String.self, forKey: .targetURLString)
+        legacyContext = try container.decodeIfPresent(LegacyContext.self, forKey: .context)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(command, forKey: .command)
+        try container.encodeIfPresent(display, forKey: .display)
+        try container.encodeIfPresent(subtitle, forKey: .subtitle)
+        try container.encodeIfPresent(targetURLString, forKey: .targetURLString)
+    }
+
+    private enum LegacyContext: Codable {
         case availableCask(token: String)
         case installedApp(name: String, path: String?, bundleID: String?, description: String?, caskToken: String?)
 
@@ -64,6 +111,21 @@ struct CommandHistoryEntry: Codable {
                 try container.encodeIfPresent(caskToken, forKey: .caskToken)
             }
         }
+
+        var urlRepresentation: URL? {
+            switch self {
+            case .availableCask(let token):
+                var components = URLComponents()
+                components.scheme = "https"
+                components.host = "formulae.brew.sh"
+                let encoded = token.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? token
+                components.path = "/cask/\(encoded)"
+                return components.url
+            case .installedApp(_, let path, _, _, _):
+                guard let path else { return nil }
+                return URL(fileURLWithPath: path)
+            }
+        }
     }
 }
 
@@ -87,8 +149,9 @@ final class CommandHistory {
         if let data = defaults.data(forKey: storageKey),
            let decoded = try? JSONDecoder().decode([CommandHistoryEntry].self, from: data) {
             entries = decoded
+            migrateLegacyEntriesIfNeeded()
         } else if let legacy = defaults.stringArray(forKey: legacyKey) {
-            entries = legacy.map { CommandHistoryEntry(command: $0, display: nil, subtitle: nil) }
+            entries = legacy.map { CommandHistoryEntry(command: $0, display: nil, subtitle: nil, targetURL: nil) }
             persist()
         } else {
             entries = []
@@ -96,16 +159,25 @@ final class CommandHistory {
     }
 
     /// Records a command the user launched successfully.
-    func record(command: String, display: String?, subtitle: String?, context: CommandHistoryEntry.Context?) {
+    func record(command: String, display: String?, subtitle: String?, targetURL: URL?) {
         let trimmedCommand = command.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedCommand.isEmpty else { return }
         let trimmedDisplay = CommandHistory.sanitized(display)
         let trimmedSubtitle = CommandHistory.sanitized(subtitle)
+        let normalizedURL = targetURL.flatMap { normalizeHistoryURL($0) }
 
         if let existingIndex = entries.firstIndex(where: { $0.command.caseInsensitiveCompare(trimmedCommand) == .orderedSame }) {
             entries.remove(at: existingIndex)
         }
-        entries.insert(CommandHistoryEntry(command: trimmedCommand, display: trimmedDisplay, subtitle: trimmedSubtitle, context: context), at: 0)
+        entries.insert(
+            CommandHistoryEntry(
+                command: trimmedCommand,
+                display: trimmedDisplay,
+                subtitle: trimmedSubtitle,
+                targetURL: normalizedURL
+            ),
+            at: 0
+        )
 
         if entries.count > maxEntries {
             entries.removeLast(entries.count - maxEntries)
@@ -226,5 +298,26 @@ final class CommandHistory {
         }
 
         return 100 + score
+    }
+
+    private func migrateLegacyEntriesIfNeeded() {
+        var migrated = false
+        entries = entries.map { entry in
+            guard entry.needsLegacyMigration, let url = entry.storedURL else {
+                return entry
+            }
+            migrated = true
+            return entry.updatingTargetURL(url)
+        }
+        if migrated {
+            persist()
+        }
+    }
+
+    private func normalizeHistoryURL(_ url: URL) -> URL {
+        if url.isFileURL {
+            return URL(fileURLWithPath: url.path)
+        }
+        return url
     }
 }
