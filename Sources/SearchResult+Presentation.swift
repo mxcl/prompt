@@ -114,7 +114,7 @@ extension SearchResult {
         case .url:
             return "Open"
         case .filesystemEntry(let entry):
-            return entry.isDirectory ? "Activate" : "Open"
+            return entry.isDirectory ? "Reveal in Finder" : "Open"
         @unknown default:
             return "Open"
         }

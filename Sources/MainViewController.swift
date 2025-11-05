@@ -148,6 +148,7 @@ class MainViewController: NSViewController {
     private var preferredHistoryCommand: String?
     private var suppressNextManualUpdate = false
     private var preferredHistoryQuery: String?
+    private var pendingDirectorySelectionPath: String?
     private let isAutocompleteEnabled = false // Temporary toggle while debugging autocomplete behavior
     private lazy var commandMenuController: CommandMenuController = {
         let controller = CommandMenuController()
@@ -380,6 +381,15 @@ class MainViewController: NSViewController {
             return
         }
 
+        if typedText.isEmpty {
+            lastManualQuery = ""
+            suppressNextManualUpdate = false
+            preferredHistoryCommand = nil
+            preferredHistoryQuery = nil
+            performSearch("")
+            return
+        }
+
         if isKeyDown && !suppressNextManualUpdate {
             lastManualQuery = typedText
         }
@@ -570,11 +580,26 @@ class MainViewController: NSViewController {
 
     private func applyResults(_ results: [SearchResult]) {
         dismissCommandMenu()
+        let targetPath = pendingDirectorySelectionPath
+        pendingDirectorySelectionPath = nil
         apps = results
         tableView.reloadData()
 
         if results.isEmpty {
             tableView.deselectAll(nil)
+        } else if let targetPath {
+            if let index = results.firstIndex(where: { result in
+                if case .filesystemEntry(let entry) = result {
+                    return entry.url.standardizedFileURL.path == targetPath
+                }
+                return false
+            }) {
+                tableView.selectRowIndexes(IndexSet(integer: index), byExtendingSelection: false)
+                tableView.scrollRowToVisible(index)
+            } else {
+                tableView.selectRowIndexes(IndexSet(integer: 0), byExtendingSelection: false)
+                tableView.scrollRowToVisible(0)
+            }
         } else {
             tableView.selectRowIndexes(IndexSet(integer: 0), byExtendingSelection: false)
             tableView.scrollRowToVisible(0)
@@ -827,46 +852,41 @@ class MainViewController: NSViewController {
 
     @discardableResult
     func openDirectoryInFinder(_ url: URL) -> Bool {
-        return NSWorkspace.shared.open(url)
+        NSWorkspace.shared.activateFileViewerSelecting([url])
+        return true
     }
 
     @discardableResult
     func openDirectoryInVSCode(_ url: URL) -> Bool {
+        let targetPath = url.path
         let bundleIdentifiers = ["com.microsoft.VSCode", "com.microsoft.VSCodeInsiders"]
-        let workspace = NSWorkspace.shared
+        let appNames = ["Visual Studio Code", "Visual Studio Code - Insiders"]
 
-        if #available(macOS 10.15, *) {
-            let configuration = NSWorkspace.OpenConfiguration()
-            configuration.activates = true
-            configuration.addsToRecentItems = false
-            configuration.createsNewApplicationInstance = false
-            for bundleID in bundleIdentifiers {
-                if let appURL = workspace.urlForApplication(withBundleIdentifier: bundleID) {
-                    workspace.open([url], withApplicationAt: appURL, configuration: configuration, completionHandler: nil)
-                    return true
-                }
-            }
-        } else {
-            for bundleID in bundleIdentifiers {
-                let task = Process()
-                task.launchPath = "/usr/bin/open"
-                task.arguments = ["-b", bundleID, url.path]
-                do {
-                    try task.run()
-                    return true
-                } catch {
-                    continue
-                }
+        for bundleID in bundleIdentifiers {
+            if runOpenCommand(arguments: ["-b", bundleID, targetPath]) {
+                return true
             }
         }
 
-        let fallbackNames = ["Visual Studio Code", "Visual Studio Code - Insiders"]
-        for appName in fallbackNames {
-            let task = Process()
-            task.launchPath = "/usr/bin/open"
-            task.arguments = ["-a", appName, url.path]
+        for appName in appNames {
+            if runOpenCommand(arguments: ["-a", appName, targetPath]) {
+                return true
+            }
+        }
+
+        let possibleCLIPaths = [
+            "/usr/local/bin/code",
+            "/opt/homebrew/bin/code",
+            "/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code",
+            "/Applications/Visual Studio Code - Insiders.app/Contents/Resources/app/bin/code"
+        ]
+
+        for cli in possibleCLIPaths where FileManager.default.isExecutableFile(atPath: cli) {
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: cli)
+            process.arguments = [targetPath]
             do {
-                try task.run()
+                try process.run()
                 return true
             } catch {
                 continue
@@ -874,6 +894,18 @@ class MainViewController: NSViewController {
         }
 
         return false
+    }
+
+    private func runOpenCommand(arguments: [String]) -> Bool {
+        let task = Process()
+        task.launchPath = "/usr/bin/open"
+        task.arguments = arguments
+        do {
+            try task.run()
+            return true
+        } catch {
+            return false
+        }
     }
 
     private func navigateUpOneDirectory() -> Bool {
@@ -888,7 +920,7 @@ class MainViewController: NSViewController {
             return false
         }
 
-        drillDownIntoDirectory(parentURL)
+        drillDownIntoDirectory(parentURL, highlightChild: currentDirectory)
         return true
     }
 
@@ -928,8 +960,9 @@ class MainViewController: NSViewController {
         return nil
     }
 
-    func drillDownIntoDirectory(_ url: URL) {
-        var absolutePath = url.path
+    func drillDownIntoDirectory(_ url: URL, highlightChild childURL: URL? = nil) {
+        let standardizedURL = url.standardizedFileURL
+        var absolutePath = standardizedURL.path
         if !absolutePath.hasSuffix("/") {
             absolutePath.append("/")
         }
@@ -940,15 +973,11 @@ class MainViewController: NSViewController {
         lastManualQuery = displayPath
         preferredHistoryCommand = nil
         preferredHistoryQuery = nil
+        pendingDirectorySelectionPath = childURL?.standardizedFileURL.path
 
         performSearch(displayPath)
 
-        if let window = view.window {
-            window.makeFirstResponder(searchField)
-            if let editor = window.fieldEditor(true, for: searchField) as? NSTextView {
-                editor.selectedRange = NSRange(location: displayPath.count, length: 0)
-            }
-        }
+        view.window?.makeFirstResponder(tableView)
     }
 
     @objc private func tableViewDoubleClicked(_ sender: NSTableView) {
@@ -1303,14 +1332,14 @@ extension MainViewController: NSTableViewDelegate {
         cell.identifier = identifier
 
         let hasMultipleMenuItems = commandMenuItems(for: result).count > 1
-        let isDirectoryResult: Bool
-        if case .filesystemEntry(let entry) = result {
-            isDirectoryResult = entry.isDirectory
+        let shouldShowCommandMenuHint: Bool
+        if case .filesystemEntry(let entry) = result, entry.isDirectory {
+            shouldShowCommandMenuHint = true
         } else {
-            isDirectoryResult = false
+            shouldShowCommandMenuHint = hasMultipleMenuItems
         }
         result.configureCell(cell, controller: self)
-        cell.setShowsCommandMenuHint(hasMultipleMenuItems && !isDirectoryResult)
+        cell.setShowsCommandMenuHint(shouldShowCommandMenuHint)
         return cell
     }
 

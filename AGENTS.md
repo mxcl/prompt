@@ -1,9 +1,9 @@
 # teaBASEv2
 
-teaBASE is a Swift UI project that presents a single prompt that can launch
-any app, open source project and community sourced script. It is integrated
-with AI agentic tools and a tea cryptocurrency wallet.
+teaBASE is a Swift Cocoa project that is currently a launcher that can also
+install things from `brew cask`
 
 ## Agent Workflow
 
-- Run `Scripts/swift-syntax-check.sh` before committing any changes.
+- Run `Scripts/swift-syntax-check.sh` before committing any changes
+- Please commit your code at logical junctures
