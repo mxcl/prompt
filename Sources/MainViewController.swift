@@ -1340,12 +1340,7 @@ extension MainViewController: NSTableViewDelegate {
         cell.identifier = identifier
 
         let hasMultipleMenuItems = commandMenuItems(for: result).count > 1
-        let shouldShowCommandMenuHint: Bool
-        if case .filesystemEntry(let entry) = result, entry.isDirectory {
-            shouldShowCommandMenuHint = true
-        } else {
-            shouldShowCommandMenuHint = hasMultipleMenuItems
-        }
+        let shouldShowCommandMenuHint = (result.directoryEntryForNavigation != nil) || hasMultipleMenuItems
         result.configureCell(cell, controller: self)
         cell.setShowsCommandMenuHint(shouldShowCommandMenuHint)
         return cell
@@ -1492,8 +1487,8 @@ extension MainViewController: TableViewNavigationDelegate {
     func tableView(_ tableView: NSTableView, didRequestCommandMenuForRow row: Int) -> Bool {
         guard tableView === self.tableView else { return false }
         guard row >= 0 && row < apps.count else { return false }
-        if case .filesystemEntry(let entry) = apps[row], entry.isDirectory {
-            drillDownIntoDirectory(entry.url)
+        if let directoryEntry = apps[row].directoryEntryForNavigation {
+            drillDownIntoDirectory(directoryEntry.url)
             return true
         }
         if commandMenuController.isShown, commandMenuAnchorRow == row {

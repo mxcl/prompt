@@ -148,6 +148,20 @@ extension SearchResult {
         }
     }
 
+    var directoryEntryForNavigation: FileSystemEntry? {
+        switch self {
+        case .filesystemEntry(let entry) where entry.isDirectory:
+            return entry
+        case .historyCommand:
+            if case .filesystemEntry(let entry) = historyContextResult, entry.isDirectory {
+                return entry
+            }
+            return nil
+        default:
+            return nil
+        }
+    }
+
     private static func caskFromHistoryURL(_ url: URL) -> CaskData.CaskItem? {
         guard let host = url.host?.lowercased(), host == "formulae.brew.sh" else { return nil }
         let components = url.path.split(separator: "/")
