@@ -183,16 +183,15 @@ extension SearchResult {
             return controller.openURL(url, originalInput: commandText)
 
         case .filesystemEntry(let entry):
+            let subtitle = SearchResult.subtitleForFilesystemEntry(entry)
             if entry.isDirectory {
-                controller.drillDownIntoDirectory(entry.url)
-                return true
+                guard controller.openDirectoryInFinder(entry.url) else { return false }
             } else {
                 guard controller.openFile(at: entry.url) else { return false }
-                let subtitle = SearchResult.subtitleForFilesystemEntry(entry)
-                controller.recordSuccessfulRun(command: entry.url.path, displayName: entry.displayName, subtitle: subtitle)
-                controller.resetSearchFieldAndResults()
-                return true
             }
+            controller.recordSuccessfulRun(command: entry.url.path, displayName: entry.displayName, subtitle: subtitle)
+            controller.resetSearchFieldAndResults()
+            return true
 
         @unknown default:
             return false
@@ -227,6 +226,20 @@ extension SearchResult {
                 return contextual.handleAlternateAction(commandText: command, controller: controller)
             }
             return controller.executeHistoryCommand(command, display: display)
+        case .filesystemEntry(let entry):
+            if entry.isDirectory {
+                let subtitle = SearchResult.subtitleForFilesystemEntry(entry)
+                if controller.openDirectoryInVSCode(entry.url) {
+                    controller.recordSuccessfulRun(command: entry.url.path, displayName: entry.displayName, subtitle: subtitle)
+                    controller.resetSearchFieldAndResults()
+                    return true
+                }
+                guard controller.openDirectoryInFinder(entry.url) else { return false }
+                controller.recordSuccessfulRun(command: entry.url.path, displayName: entry.displayName, subtitle: subtitle)
+                controller.resetSearchFieldAndResults()
+                return true
+            }
+            return handlePrimaryAction(commandText: commandText, controller: controller)
         default:
             return handlePrimaryAction(commandText: commandText, controller: controller)
         }
