@@ -6,6 +6,7 @@ final class CommandHistoryProvider: SearchProvider {
     private let baseScore = 200
     private let limit = 8
     private let lowRankingPruneWindow = 120 // drop fuzzy matches that trail the leader by more than this delta
+    private let deprecatedCaskPenalty = 200
 
     func search(query: SearchQuery, generation: UInt64, completion: @escaping ([ProviderResult]) -> Void) {
         guard !query.isEmpty else {
@@ -39,6 +40,9 @@ final class CommandHistoryProvider: SearchProvider {
             if lower == loweredQuery {
                 score = max(score, 1000)
             }
+            if isDeprecatedCask(entry: entry) {
+                score = max(score - deprecatedCaskPenalty, 0)
+            }
             let result = SearchResult.historyCommand(
                 command: command,
                 display: entry.display,
@@ -57,5 +61,11 @@ final class CommandHistoryProvider: SearchProvider {
         guard let topScore = matches.first?.score else { return [] }
         let minimumScore = max(topScore - lowRankingPruneWindow, 0)
         return matches.filter { $0.score >= minimumScore }
+    }
+
+    private func isDeprecatedCask(entry: CommandHistoryEntry) -> Bool {
+        guard let context = entry.context else { return false }
+        guard let matchedCask = context.resolvedSearchResult()?.matchedCask else { return false }
+        return matchedCask.isDeprecated
     }
 }

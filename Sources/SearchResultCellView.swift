@@ -198,6 +198,7 @@ final class SearchResultCellView: NSTableCellView {
     private let actionHintsContentStack = NSStackView()
     private let titleStack = NSStackView()
     private let recentTagView = PillTagView(text: "recent")
+    private let deprecatedTagView = PillTagView(text: "deprecated")
     private let commandMenuHintView = KeycapLabel(text: "→")
 
     private var titleTrailingToHint: NSLayoutConstraint!
@@ -255,6 +256,8 @@ final class SearchResultCellView: NSTableCellView {
         titleStack.addArrangedSubview(titleField)
         titleStack.addArrangedSubview(recentTagView)
         recentTagView.isHidden = true
+        titleStack.addArrangedSubview(deprecatedTagView)
+        deprecatedTagView.isHidden = true
         addSubview(titleStack)
 
         actionHintStack.orientation = .horizontal
@@ -326,12 +329,14 @@ final class SearchResultCellView: NSTableCellView {
         applyBaseFonts()
         applySingleLineTitle()
         recentTagView.isHidden = true
+        setDeprecatedTagVisible(false)
     }
 
     func configureForCask() {
         applyBaseFonts()
         applySingleLineTitle()
         recentTagView.isHidden = true
+        setDeprecatedTagVisible(false)
     }
 
     func configureForHistory(isRecent: Bool, useReducedFonts: Bool) {
@@ -343,16 +348,22 @@ final class SearchResultCellView: NSTableCellView {
         }
         enableMultilineTitle()
         recentTagView.isHidden = !isRecent
+        setDeprecatedTagVisible(false)
     }
 
     func configureForPlainText() {
         applyBaseFonts()
         applySingleLineTitle()
         recentTagView.isHidden = true
+        setDeprecatedTagVisible(false)
     }
 
     func setRecentTagVisible(_ isVisible: Bool) {
         recentTagView.isHidden = !isVisible
+    }
+
+    func setDeprecatedTagVisible(_ isVisible: Bool) {
+        deprecatedTagView.isHidden = !isVisible
     }
 
     func setActionHint(_ text: String?, keyGlyph: String = "↩︎") {
@@ -381,6 +392,8 @@ final class SearchResultCellView: NSTableCellView {
         super.prepareForReuse()
         setActionHints([])
         setShowsCommandMenuHint(true)
+        setDeprecatedTagVisible(false)
+        setRecentTagVisible(false)
     }
 
     override var backgroundStyle: NSView.BackgroundStyle {

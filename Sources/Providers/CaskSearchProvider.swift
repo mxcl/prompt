@@ -13,6 +13,7 @@ struct CaskData: Decodable {
         let url: String?
         let version: String?
         let sha256: String?
+        let deprecated: Bool?
         private let artifacts: [ArtifactContainer]?
 
         struct ArtifactContainer: Decodable {
@@ -30,7 +31,16 @@ struct CaskData: Decodable {
         }
 
         private enum CodingKeys: String, CodingKey {
-            case token, full_token, name, desc, homepage, url, version, sha256, artifacts
+            case token
+            case full_token
+            case name
+            case desc
+            case homepage
+            case url
+            case version
+            case sha256
+            case deprecated
+            case artifacts
         }
 
         var displayName: String {
@@ -47,6 +57,10 @@ struct CaskData: Decodable {
 
         var appNames: [String] {
             return artifacts?.compactMap { $0.app }.flatMap { $0 } ?? []
+        }
+
+        var isDeprecated: Bool {
+            return deprecated == true
         }
     }
 }
@@ -104,9 +118,10 @@ final class CaskSearchProvider: SearchProvider {
         queue.async {
             let matches = CaskStore.shared.casks.compactMap { cask -> ProviderResult? in
                 guard CaskSearchProvider.matches(cask: cask, lowercasedQuery: lower) else { return nil }
-                let score = CaskSearchProvider.relevanceScore(for: cask, lowercasedQuery: lower)
-                guard score > 0 else { return nil }
-                return ProviderResult(source: .availableCasks, result: .availableCask(cask), score: score)
+                let baseScore = CaskSearchProvider.relevanceScore(for: cask, lowercasedQuery: lower)
+                let adjustedScore = CaskSearchProvider.adjustedScore(for: cask, baseScore: baseScore)
+                guard adjustedScore > 0 else { return nil }
+                return ProviderResult(source: .availableCasks, result: .availableCask(cask), score: adjustedScore)
             }
             completion(matches)
         }
@@ -146,5 +161,11 @@ final class CaskSearchProvider: SearchProvider {
         }
 
         return 100
+    }
+
+    private static func adjustedScore(for cask: CaskData.CaskItem, baseScore: Int) -> Int {
+        guard cask.isDeprecated else { return baseScore }
+        let penalty = 200
+        return max(baseScore - penalty, 0)
     }
 }

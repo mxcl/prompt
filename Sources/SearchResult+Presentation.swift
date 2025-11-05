@@ -5,11 +5,12 @@ extension SearchResult {
         let hints = actionHints
 
         switch self {
-        case .installedAppMetadata(let name, let path, _, let description, _):
+        case .installedAppMetadata(let name, let path, _, let description, let cask):
             let title = decoratedTitle(for: name)
             let subtitle = SearchResult.subtitleForInstalledApp(path: path, description: description)
             cell.apply(title: title, titleColor: NSColor.white, subtitle: subtitle)
             cell.configureForInstalled()
+            cell.setDeprecatedTagVisible(cask?.isDeprecated == true)
 
         case .availableCask(let cask):
             let baseTitle = cask.displayName
@@ -19,6 +20,7 @@ extension SearchResult {
 
             cell.apply(title: title, titleColor: NSColor.systemGreen.withAlphaComponent(0.85), subtitle: subtitle)
             cell.configureForCask()
+            cell.setDeprecatedTagVisible(cask.isDeprecated)
 
         case .historyCommand(let command, let display, let storedSubtitle, _, let isRecent):
             if let contextResult = historyContextResult {
@@ -50,12 +52,14 @@ extension SearchResult {
             cell.configureForHistory(isRecent: isRecent, useReducedFonts: useReducedFonts)
             let decorated = decoratedTitle(for: cell.titleField.stringValue)
             cell.titleField.stringValue = decorated
+            cell.setDeprecatedTagVisible(false)
 
         case .url(let url):
             let title = decoratedTitle(for: url.absoluteString)
             let subtitle = SearchResult.subtitleForURL(url)
             cell.apply(title: title, titleColor: NSColor.systemBlue, subtitle: subtitle)
             cell.configureForPlainText()
+            cell.setDeprecatedTagVisible(false)
 
         case .filesystemEntry(let entry):
             let title = decoratedTitle(for: entry.displayName)
@@ -63,11 +67,13 @@ extension SearchResult {
             let color: NSColor = entry.isDirectory ? NSColor.systemOrange : NSColor.white
             cell.apply(title: title, titleColor: color, subtitle: subtitle, tooltip: entry.url.path)
             cell.configureForPlainText()
+            cell.setDeprecatedTagVisible(false)
 
         @unknown default:
             let title = decoratedTitle(for: displayName)
             cell.apply(title: title, titleColor: NSColor.white, subtitle: nil)
             cell.configureForInstalled()
+            cell.setDeprecatedTagVisible(false)
         }
 
         cell.setActionHints(hints)
