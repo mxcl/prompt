@@ -1272,6 +1272,19 @@ extension MainViewController: NSTableViewDelegate {
 
 // MARK: - NSTextFieldDelegate
 extension MainViewController: NSTextFieldDelegate {
+    func control(_ control: NSControl, textShouldChangeCharactersIn range: NSRange, replacementString string: String?) -> Bool {
+        guard control === searchField else { return true }
+        guard let string, string.contains(where: { $0 == "\n" || $0 == "\r" }) else {
+            return true
+        }
+        let modifiers = NSApp.currentEvent?.modifierFlags.intersection(.deviceIndependentFlagsMask) ?? []
+        if modifiers.contains(.option) {
+            _ = handleSearchFieldAlternateAction()
+            return false
+        }
+        return true
+    }
+
     func control(_ control: NSControl, textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
         switch commandSelector {
         case #selector(NSResponder.moveDown(_:)): // Down arrow
