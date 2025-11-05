@@ -48,6 +48,10 @@ class NavigableTableView: NSTableView {
                 navigationDelegate?.tableViewShouldReturnToSearchField(self)
                 return
             }
+        case 123: // Left arrow
+            if navigationDelegate?.tableViewShouldNavigateUpDirectory(self) == true {
+                return
+            }
         case 124: // Right arrow
             let row = self.selectedRow
             if row >= 0,
@@ -126,6 +130,7 @@ protocol TableViewNavigationDelegate: AnyObject {
     func tableViewShouldLaunchSelectedApp(_ tableView: NSTableView)
     func tableView(_ tableView: NSTableView, shouldDeleteRow row: Int) -> Bool
     func tableViewShouldPerformAlternateAction(_ tableView: NSTableView)
+    func tableViewShouldNavigateUpDirectory(_ tableView: NSTableView) -> Bool
     func tableView(_ tableView: NSTableView, didRequestCommandMenuForRow row: Int) -> Bool
     func tableViewShouldSelectAllText(_ tableView: NSTableView)
 }
@@ -871,6 +876,58 @@ class MainViewController: NSViewController {
         return false
     }
 
+    private func navigateUpOneDirectory() -> Bool {
+        guard let currentDirectory = currentDirectoryURLForNavigation() else { return false }
+        let parentURL = currentDirectory.deletingLastPathComponent()
+        if parentURL.path == currentDirectory.path {
+            return false
+        }
+
+        var isDir: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: parentURL.path, isDirectory: &isDir), isDir.boolValue else {
+            return false
+        }
+
+        drillDownIntoDirectory(parentURL)
+        return true
+    }
+
+    private func currentDirectoryURLForNavigation() -> URL? {
+        let rawText = searchField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !rawText.isEmpty, looksLikePath(rawText) else { return nil }
+
+        var expanded = (rawText as NSString).expandingTildeInPath
+        if expanded.isEmpty {
+            return nil
+        }
+        expanded = (expanded as NSString).standardizingPath
+        if expanded.isEmpty {
+            expanded = "/"
+        }
+
+        var candidatePath = expanded
+        let fileManager = FileManager.default
+        var isDir: ObjCBool = false
+
+        if fileManager.fileExists(atPath: candidatePath, isDirectory: &isDir) {
+            if !isDir.boolValue {
+                candidatePath = (candidatePath as NSString).deletingLastPathComponent
+            }
+        } else {
+            candidatePath = (candidatePath as NSString).deletingLastPathComponent
+        }
+
+        if candidatePath.isEmpty {
+            candidatePath = "/"
+        }
+
+        if fileManager.fileExists(atPath: candidatePath, isDirectory: &isDir), isDir.boolValue {
+            return URL(fileURLWithPath: candidatePath, isDirectory: true)
+        }
+
+        return nil
+    }
+
     func drillDownIntoDirectory(_ url: URL) {
         var absolutePath = url.path
         if !absolutePath.hasSuffix("/") {
@@ -1433,6 +1490,11 @@ extension MainViewController: TableViewNavigationDelegate {
         let app = apps[selectedRow]
         let commandText = searchField.stringValue
         _ = app.handleAlternateAction(commandText: commandText, controller: self)
+    }
+
+    func tableViewShouldNavigateUpDirectory(_ tableView: NSTableView) -> Bool {
+        dismissCommandMenu()
+        return navigateUpOneDirectory()
     }
 
     func tableViewShouldSelectAllText(_ tableView: NSTableView) {
