@@ -649,8 +649,10 @@ class MainViewController: NSViewController {
             caskContext = nil
         }
 
+        let contextualInstalled = result.isInstalled || (result.historyContextResult?.isInstalled ?? false)
+
         let primarySubtitle: String?
-        if result.isInstalled {
+        if contextualInstalled {
             primarySubtitle = nil
         } else {
             primarySubtitle = caskContext?.homepage
@@ -693,8 +695,6 @@ class MainViewController: NSViewController {
                 _ = result.handleAlternateAction(commandText: commandText, controller: self)
             })
         }
-
-        let contextualInstalled = result.isInstalled || (result.historyContextResult?.isInstalled ?? false)
 
         if contextualInstalled,
            let context = caskContext {
