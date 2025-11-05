@@ -705,7 +705,7 @@ class MainViewController: NSViewController {
 
         if let context = caskContext,
            !context.cask.token.isEmpty {
-            menuItems.append(CommandMenuItem(title: "Homebrew Webpage", subtitle: context.brewURL, keyGlyph: nil) { [weak self] in
+            menuItems.append(CommandMenuItem(title: "Homebrew Web Entry", subtitle: context.brewURL, keyGlyph: nil) { [weak self] in
                 _ = self?.openCaskBrewPage(context.cask)
             })
         }

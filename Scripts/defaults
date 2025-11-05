@@ -1,0 +1,3 @@
+#!/bin/sh
+
+/usr/bin/defaults read xyz.tea.BASEv2
