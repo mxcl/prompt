@@ -49,8 +49,18 @@ enum SearchResult {
 struct FileSystemEntry {
     let url: URL
     let isDirectory: Bool
+    private let preferredDisplayPath: String?
+
+    init(url: URL, isDirectory: Bool, preferredDisplayPath: String? = nil) {
+        self.url = url
+        self.isDirectory = isDirectory
+        self.preferredDisplayPath = preferredDisplayPath
+    }
 
     var displayName: String {
+        if let preferred = preferredDisplayPath, !preferred.isEmpty {
+            return preferred
+        }
         var name = url.lastPathComponent
         if name.isEmpty {
             name = url.path
@@ -159,7 +169,8 @@ extension SearchResult {
                 return installedApp
             }
         }
-        let entry = FileSystemEntry(url: url, isDirectory: isDirectory.boolValue)
+        let displayPath = abbreviatedHistoryPath(url.path)
+        let entry = FileSystemEntry(url: url, isDirectory: isDirectory.boolValue, preferredDisplayPath: displayPath)
         return .filesystemEntry(entry)
     }
 
@@ -223,5 +234,24 @@ extension SearchResult {
     private static func isWebURL(_ url: URL) -> Bool {
         guard let scheme = url.scheme?.lowercased() else { return false }
         return scheme == "http" || scheme == "https"
+    }
+
+    private static func abbreviatedHistoryPath(_ path: String) -> String {
+        let homePath = FileManager.default.homeDirectoryForCurrentUser.path
+        guard !homePath.isEmpty else { return path }
+        if path == homePath {
+            return "~"
+        }
+        if path.hasPrefix(homePath) {
+            let suffix = path.dropFirst(homePath.count)
+            if suffix.isEmpty {
+                return "~"
+            }
+            if suffix.first == "/" {
+                return "~" + suffix
+            }
+            return "~/" + suffix
+        }
+        return path
     }
 }
