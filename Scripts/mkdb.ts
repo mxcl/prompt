@@ -64,7 +64,7 @@ if (caskEtag) {
 await writeJSON(join(dataDir, "cask.json"), caskOutput);
 
 // Keep the formula payload around in DerivedData but ship an empty list for now.
-for (const filename of ["formula.json", "formulae.json"]) {
+for (const filename of ["formula.json", "formula.json"]) {
   await writeJSON(join(dataDir, filename), []);
 }
 

@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		13F8AD798DCE430389F17335 /* CommandHistoryProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D4E20C00EC14B4793D50161 /* CommandHistoryProvider.swift */; };
+		152D80D6AF084DAB97550FA4 /* SearchModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4DA2C31379641B1A1AC14F5 /* SearchModels.swift */; };
+		40F163A6A2FD4F6AB5D7A470 /* FuzzySearchHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54BBF21CB8BD45FC9CAF0F6C /* FuzzySearchHelper.swift */; };
 		63527C652CA5F0CD0089DB0D /* formula.json in Resources */ = {isa = PBXBuildFile; fileRef = 63527C622CA5F0CD0089DB0D /* formula.json */; };
 		63527C662CA5F0CD0089DB0D /* cask.json in Resources */ = {isa = PBXBuildFile; fileRef = 63527C612CA5F0CD0089DB0D /* cask.json */; };
 		636F8E542E45061C00BD4256 /* MainWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 636F8E522E45061C00BD4256 /* MainWindowController.swift */; };
@@ -19,20 +22,21 @@
 		63FA80042F7B1C1000A1B234 /* ShortcutCaptureTextField.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63FA80032F7B1C1000A1B234 /* ShortcutCaptureTextField.swift */; };
 		63FA80062F7B1C1000A1B234 /* SettingsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63FA80052F7B1C1000A1B234 /* SettingsViewController.swift */; };
 		63FA80082F7B1C1000A1B234 /* SettingsWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63FA80072F7B1C1000A1B234 /* SettingsWindowController.swift */; };
-		F423BD0F3064F53E64E5364F /* CommandHistory.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBF88BFA021A74AFD984F7C4 /* CommandHistory.swift */; };
-		152D80D6AF084DAB97550FA4 /* SearchModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4DA2C31379641B1A1AC14F5 /* SearchModels.swift */; };
-		C8997156F90D42B087D55ACF /* SearchProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5952FA7F4544462AA84852D7 /* SearchProvider.swift */; };
-		40F163A6A2FD4F6AB5D7A470 /* FuzzySearchHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54BBF21CB8BD45FC9CAF0F6C /* FuzzySearchHelper.swift */; };
 		7736A268BF87493C9A73C67B /* InstalledApplicationsProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = FAF6B1C1CB5E41698A8D2377 /* InstalledApplicationsProvider.swift */; };
-		13F8AD798DCE430389F17335 /* CommandHistoryProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D4E20C00EC14B4793D50161 /* CommandHistoryProvider.swift */; };
 		938A1D0CFD994AA68424E402 /* CaskSearchProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72A4F706BC3F42B5BBDD44BC /* CaskSearchProvider.swift */; };
 		A6C666C8C8664BE0853AACB2 /* Conductor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 479A740B3B974E9B96452193 /* Conductor.swift */; };
+		C8997156F90D42B087D55ACF /* SearchProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5952FA7F4544462AA84852D7 /* SearchProvider.swift */; };
 		D4FE57E32FC8DCD8009F6AC1 /* SearchResultCellView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4FE57E12FC8DCD8009F6AC1 /* SearchResultCellView.swift */; };
 		D4FE57E42FC8DCD8009F6AC1 /* SearchResult+Presentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4FE57E22FC8DCD8009F6AC1 /* SearchResult+Presentation.swift */; };
 		D4FE58052FC8E0E9009F6AC1 /* CommandMenuController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4FE58042FC8E0E9009F6AC1 /* CommandMenuController.swift */; };
+		F423BD0F3064F53E64E5364F /* CommandHistory.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBF88BFA021A74AFD984F7C4 /* CommandHistory.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		0D4E20C00EC14B4793D50161 /* CommandHistoryProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandHistoryProvider.swift; sourceTree = "<group>"; };
+		479A740B3B974E9B96452193 /* Conductor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Conductor.swift; sourceTree = "<group>"; };
+		54BBF21CB8BD45FC9CAF0F6C /* FuzzySearchHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FuzzySearchHelper.swift; sourceTree = "<group>"; };
+		5952FA7F4544462AA84852D7 /* SearchProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchProvider.swift; sourceTree = "<group>"; };
 		63527C602CA5F0CD0089DB0D /* .gitignore */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
 		63527C612CA5F0CD0089DB0D /* cask.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = cask.json; sourceTree = "<group>"; };
 		63527C622CA5F0CD0089DB0D /* formula.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = formula.json; sourceTree = "<group>"; };
@@ -47,17 +51,13 @@
 		63FA80032F7B1C1000A1B234 /* ShortcutCaptureTextField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortcutCaptureTextField.swift; sourceTree = "<group>"; };
 		63FA80052F7B1C1000A1B234 /* SettingsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewController.swift; sourceTree = "<group>"; };
 		63FA80072F7B1C1000A1B234 /* SettingsWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsWindowController.swift; sourceTree = "<group>"; };
-		CBF88BFA021A74AFD984F7C4 /* CommandHistory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandHistory.swift; sourceTree = "<group>"; };
-		F4DA2C31379641B1A1AC14F5 /* SearchModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchModels.swift; sourceTree = "<group>"; };
-		5952FA7F4544462AA84852D7 /* SearchProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchProvider.swift; sourceTree = "<group>"; };
-		54BBF21CB8BD45FC9CAF0F6C /* FuzzySearchHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FuzzySearchHelper.swift; sourceTree = "<group>"; };
-		FAF6B1C1CB5E41698A8D2377 /* InstalledApplicationsProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InstalledApplicationsProvider.swift; sourceTree = "<group>"; };
-		0D4E20C00EC14B4793D50161 /* CommandHistoryProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandHistoryProvider.swift; sourceTree = "<group>"; };
 		72A4F706BC3F42B5BBDD44BC /* CaskSearchProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaskSearchProvider.swift; sourceTree = "<group>"; };
-		479A740B3B974E9B96452193 /* Conductor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Conductor.swift; sourceTree = "<group>"; };
+		CBF88BFA021A74AFD984F7C4 /* CommandHistory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandHistory.swift; sourceTree = "<group>"; };
 		D4FE57E12FC8DCD8009F6AC1 /* SearchResultCellView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchResultCellView.swift; sourceTree = "<group>"; };
 		D4FE57E22FC8DCD8009F6AC1 /* SearchResult+Presentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SearchResult+Presentation.swift"; sourceTree = "<group>"; };
 		D4FE58042FC8E0E9009F6AC1 /* CommandMenuController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandMenuController.swift; sourceTree = "<group>"; };
+		F4DA2C31379641B1A1AC14F5 /* SearchModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchModels.swift; sourceTree = "<group>"; };
+		FAF6B1C1CB5E41698A8D2377 /* InstalledApplicationsProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InstalledApplicationsProvider.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -230,6 +230,10 @@
 			outputPaths = (
 				"$(SRCROOT)/Data/formula.json",
 				"$(SRCROOT)/Data/cask.json",
+				"$(SRCROOT)/DerivedData/mkdb/cask.json",
+				"$(SRCROOT)/DerivedData/mkdb/formula.json",
+				"$(SRCROOT)/DerivedData/mkdb/cask.json.etag",
+				"$(SRCROOT)/DerivedData/mkdb/formula.json.etag",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
