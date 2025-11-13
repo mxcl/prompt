@@ -114,10 +114,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let mainMenu = NSMenu(title: "MainMenu")
 
         // App submenu (kept minimal but avoids empty menu warnings)
-        let appMenuItem = NSMenuItem(title: "teaBASEv2", action: nil, keyEquivalent: "")
+        let appMenuItem = NSMenuItem(title: "teaRUN", action: nil, keyEquivalent: "")
         let appMenu = NSMenu()
         appMenu.addItem(
-            withTitle: "Quit teaBASEv2",
+            withTitle: "Quit teaRUN",
             action: #selector(NSApplication.terminate(_:)),
             keyEquivalent: "q"
         )

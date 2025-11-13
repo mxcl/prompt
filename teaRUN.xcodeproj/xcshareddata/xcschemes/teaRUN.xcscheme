@@ -16,9 +16,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "63AB60312BB5DC4700254B65"
-               BuildableName = "teaBASEv2.app"
-               BlueprintName = "teaBASEv2"
-               ReferencedContainer = "container:teaBASEv2.xcodeproj">
+               BuildableName = "teaRUN.app"
+               BlueprintName = "teaRUN"
+               ReferencedContainer = "container:teaRUN.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -45,9 +45,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "63AB60312BB5DC4700254B65"
-            BuildableName = "teaBASEv2.app"
-            BlueprintName = "teaBASEv2"
-            ReferencedContainer = "container:teaBASEv2.xcodeproj">
+            BuildableName = "teaRUN.app"
+            BlueprintName = "teaRUN"
+            ReferencedContainer = "container:teaRUN.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -62,9 +62,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "63AB60312BB5DC4700254B65"
-            BuildableName = "teaBASEv2.app"
-            BlueprintName = "teaBASEv2"
-            ReferencedContainer = "container:teaBASEv2.xcodeproj">
+            BuildableName = "teaRUN.app"
+            BlueprintName = "teaRUN"
+            ReferencedContainer = "container:teaRUN.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

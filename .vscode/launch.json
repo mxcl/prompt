@@ -6,7 +6,7 @@
             "type": "node-terminal",
             "request": "launch",
             "preLaunchTask": "teaBASE: build",
-            "command": "${workspaceFolder}/DerivedData/Build/Products/Debug/teaBASEv2.app/Contents/MacOS/teaBASEv2",
+            "command": "${workspaceFolder}/DerivedData/Build/Products/Debug/teaRUN.app/Contents/MacOS/teaRUN",
             "cwd": "${workspaceFolder}",
             "internalConsoleOptions": "neverOpen"
         }

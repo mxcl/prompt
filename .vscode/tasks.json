@@ -4,7 +4,7 @@
         {
             "label": "teaBASE: kill running app",
             "type": "shell",
-            "command": "pkill -f teaBASEv2 || true",
+            "command": "pkill -f teaRUN || true",
             "options": {
                 "cwd": "${workspaceFolder}"
             },

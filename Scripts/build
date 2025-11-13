@@ -1,6 +1,6 @@
 #!/usr/bin/env pkgx +xcbeautify bash
 
-# Build script for teaBASEv2
+# Build script for teaRUN
 # This script builds the Xcode project and outputs the resulting app path
 
 cd "$(dirname "$0")/.."  # Change to project root directory
@@ -15,8 +15,8 @@ NC='\033[0m' # No Color
 
 # Configuration
 PROJECT_DIR="$(pwd)"
-PROJECT_NAME="teaBASEv2"
-SCHEME_NAME="teaBASEv2"
+PROJECT_NAME="teaRUN"
+SCHEME_NAME="teaRUN"
 BUILD_CONFIG="Debug"
 DERIVED_DATA_PATH="$PROJECT_DIR/DerivedData"
 DESTINATION="platform=macOS,arch=arm64,name=My Mac"

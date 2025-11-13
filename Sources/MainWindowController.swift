@@ -27,7 +27,7 @@ class MainWindowController: NSWindowController {
     private func setupWindow() {
         guard let window = window else { return }
 
-        window.title = "teaBASEv2"
+        window.title = "teaRUN"
         window.titleVisibility = .hidden
         window.titlebarAppearsTransparent = true
         window.isOpaque = false

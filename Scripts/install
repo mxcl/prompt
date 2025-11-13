@@ -4,9 +4,9 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
-SCHEME="${SCHEME:-teaBASEv2}"
+SCHEME="${SCHEME:-teaRUN}"
 CONFIGURATION="${CONFIGURATION:-Release}"
-APP_BUNDLE_NAME="${APP_BUNDLE_NAME:-teaBASEv2.app}"
+APP_BUNDLE_NAME="${APP_BUNDLE_NAME:-teaRUN.app}"
 DERIVED_DATA_PATH="${DERIVED_DATA_PATH:-${PROJECT_ROOT}/DerivedData}"
 
 destination_arg="${1:-/Applications}"
@@ -51,7 +51,7 @@ run_with_optional_sudo() {
 
 echo "Building ${SCHEME} (${CONFIGURATION}) into ${DERIVED_DATA_PATH}…"
 xcodebuild \
-  -project "${PROJECT_ROOT}/teaBASEv2.xcodeproj" \
+  -project "${PROJECT_ROOT}/teaRUN.xcodeproj" \
   -scheme "${SCHEME}" \
   -configuration "${CONFIGURATION}" \
   -derivedDataPath "${DERIVED_DATA_PATH}" \
